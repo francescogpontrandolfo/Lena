@@ -50,6 +50,26 @@ export default function FriendDetailScreen() {
   const [showLogModal, setShowLogModal] = useState(false);
   const [activeEditModal, setActiveEditModal] = useState<EditModalType>(null);
 
+  // Fade-in animation on mount
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(30)).current;
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 60,
+        friction: 12,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   // Animation for button presses
   const whatsappScale = React.useRef(new Animated.Value(1)).current;
   const logScale = React.useRef(new Animated.Value(1)).current;
@@ -159,7 +179,10 @@ export default function FriendDetailScreen() {
     <>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Hero Profile Card */}
-        <View style={styles.heroCard}>
+        <Animated.View style={[styles.heroCard, {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        }]}>
           <View style={styles.heroTop}>
             {/* Avatar */}
             <View style={styles.avatarSection}>
@@ -198,14 +221,14 @@ export default function FriendDetailScreen() {
               onPress={() => setActiveEditModal('birthday')}
               activeOpacity={0.7}
             >
-              <Feather name="gift" size={18} color={colors.textSecondary} />
+              <Feather name="gift" size={16} color={colors.textSecondary} />
               <View style={styles.chipTextContainer}>
-                <Text style={styles.chipValue}>
+                <Text style={styles.chipValue} numberOfLines={1}>
                   {friend.birthday ? format(new Date(friend.birthday), 'MMM d') : 'Add'}
                 </Text>
                 <Text style={styles.chipLabel}>Birthday</Text>
               </View>
-              <Feather name="chevron-right" size={16} color={colors.textLight} />
+              <Feather name="chevron-right" size={14} color={colors.textLight} />
             </TouchableOpacity>
 
             {/* Frequency Chip */}
@@ -214,12 +237,12 @@ export default function FriendDetailScreen() {
               onPress={() => setActiveEditModal('frequency')}
               activeOpacity={0.7}
             >
-              <Feather name="calendar" size={18} color={colors.textSecondary} />
+              <Feather name="calendar" size={16} color={colors.textSecondary} />
               <View style={styles.chipTextContainer}>
-                <Text style={styles.chipValue}>{getFrequencyLabel(friend.contactFrequencyDays)}</Text>
+                <Text style={styles.chipValue} numberOfLines={1}>{getFrequencyLabel(friend.contactFrequencyDays)}</Text>
                 <Text style={styles.chipLabel}>Frequency</Text>
               </View>
-              <Feather name="chevron-right" size={16} color={colors.textLight} />
+              <Feather name="chevron-right" size={14} color={colors.textLight} />
             </TouchableOpacity>
 
             {/* Tier Chip */}
@@ -228,15 +251,15 @@ export default function FriendDetailScreen() {
               onPress={() => setActiveEditModal('tier')}
               activeOpacity={0.7}
             >
-              <Feather name="star" size={18} color={colors.textSecondary} />
+              <Feather name="star" size={16} color={colors.textSecondary} />
               <View style={styles.chipTextContainer}>
-                <Text style={styles.chipValue}>{TIER_LABELS[friend.tier]}</Text>
+                <Text style={styles.chipValue} numberOfLines={1}>{TIER_LABELS[friend.tier]}</Text>
                 <Text style={styles.chipLabel}>Tier</Text>
               </View>
-              <Feather name="chevron-right" size={16} color={colors.textLight} />
+              <Feather name="chevron-right" size={14} color={colors.textLight} />
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Quick Actions */}
         <View style={styles.actionsRow}>
@@ -428,18 +451,22 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderRadius: borderRadius.md,
     gap: spacing.xs,
+    minHeight: 60,
   },
   chipTextContainer: {
     flex: 1,
+    marginRight: spacing.xs,
   },
   chipValue: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.xs,
     fontWeight: typography.weights.semibold,
     color: colors.textPrimary,
+    numberOfLines: 1,
   },
   chipLabel: {
-    fontSize: typography.sizes.xs,
+    fontSize: 10,
     color: colors.textSecondary,
+    marginTop: 2,
   },
 
   // Actions

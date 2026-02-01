@@ -98,12 +98,12 @@ export const RELATIONSHIP_LABELS: Record<RelationshipType, string> = {
   acquaintance: 'Acquaintance',
 };
 
-// Relationship type colors (for badges) - Vibrant palette
+// Relationship type colors (for badges) - Electric palette
 export const RELATIONSHIP_COLORS: Record<RelationshipType, string> = {
-  close_friend: '#FF6B9D',  // secondary (vibrant pink)
-  friend: '#4A90D9',        // primary (vibrant blue)
-  family: '#34D399',        // accent (vibrant mint)
-  colleague: '#FBBF24',     // warning (vibrant yellow)
+  close_friend: '#FF6B9D',  // vibrant pink
+  friend: '#0099FF',        // electric blue
+  family: '#6366F1',        // electric indigo
+  colleague: '#F59E0B',     // amber
   acquaintance: '#94A3B8',  // slate
 };
 
@@ -115,11 +115,11 @@ export const TIER_LABELS: Record<FriendTier, string> = {
   other: 'Other',
 };
 
-// Friend tier colors - Vibrant palette
+// Friend tier colors - Electric palette
 export const TIER_COLORS: Record<FriendTier, string> = {
-  top: '#FF6B9D',           // secondary (vibrant pink) - most important
-  close: '#4A90D9',         // primary (vibrant blue)
-  cordialities: '#34D399',  // accent (vibrant mint)
+  top: '#FF6B9D',           // vibrant pink - most important
+  close: '#0099FF',         // electric blue
+  cordialities: '#6366F1',  // electric indigo
   other: '#94A3B8',         // slate
 };
 

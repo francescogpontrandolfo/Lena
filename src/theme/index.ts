@@ -1,38 +1,39 @@
-// Lena Design System - Vibrant & Warm
+// Lena Design System - Electric Blue & Clean
 
 export const colors = {
-  // Backgrounds
+  // Backgrounds - Clean white
   background: '#FFFFFF',   // Pure white
-  card: '#FFFFFF',
+  card: '#FAFBFC',         // Very subtle off-white for cards
 
-  // Primary palette - Vibrant blue
-  primary: '#4A90D9',
-  primaryLight: '#7CB3F0',
-  primaryDark: '#2B6CB0',
+  // Primary palette - Electric blue
+  primary: '#0099FF',      // Bright electric blue
+  primaryLight: '#E8F4FD', // Light blue for backgrounds (readable)
+  primaryDark: '#0077CC',
+  primaryMid: '#33B1FF',   // Medium blue for accents
 
-  // Secondary palette - Vibrant pink/coral
-  secondary: '#FF6B9D',
-  secondaryLight: '#FFB8D1',
-  secondaryDark: '#E05086',
+  // Secondary palette - Warm coral/pink
+  secondary: '#FF6B9D',    // Vibrant pink
+  secondaryLight: '#FFE0EB',
+  secondaryDark: '#E55585',
 
-  // Accent - Vibrant mint green
-  accent: '#34D399',
-  accentLight: '#6EE7B7',
-  accentDark: '#10B981',
+  // Accent - Deep indigo/purple
+  accent: '#6366F1',       // Electric indigo
+  accentLight: '#EEF0FF',
+  accentDark: '#4F46E5',
 
-  // Text
-  textPrimary: '#1A1A2E',
-  textSecondary: '#4A5568',
-  textLight: '#718096',
+  // Text - Dark on white background
+  textPrimary: '#1A1A1A',
+  textSecondary: '#6B7280',
+  textLight: '#9CA3AF',
 
   // Semantic
-  success: '#34D399',
-  warning: '#FBBF24',
-  error: '#EF4444',
+  success: '#0099FF',      // Electric blue (consistent)
+  warning: '#F59E0B',      // Amber (readable)
+  error: '#EF4444',        // Clear red
 
   // UI
   border: '#E5E7EB',
-  shadow: 'rgba(0, 0, 0, 0.08)',
+  shadow: 'rgba(0, 153, 255, 0.15)',
 };
 
 export const spacing = {

@@ -17,32 +17,25 @@ import * as Contacts from 'expo-contacts';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { useStore } from '../store/useStore';
-import { ImportedContact } from '../types';
-import { getContactsFromPhone } from '../services/contacts';
-import { generateId } from '../services/database';
+import { Friend } from '../types';
 
 export default function ImportContactsScreen() {
   const navigation = useNavigation();
-  const { friends, addFriend, settings } = useStore();
+  const { friends, updateFriend, settings } = useStore();
 
-  const [contacts, setContacts] = useState<ImportedContact[]>([]);
+  const [allFriends, setAllFriends] = useState<Friend[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isImporting, setIsImporting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
 
-  // Get IDs of contacts already imported
-  const existingContactIds = new Set(
-    friends.filter(f => f.contactId).map(f => f.contactId)
-  );
-
   useEffect(() => {
-    loadContacts();
+    loadFriends();
   }, []);
 
-  const loadContacts = async () => {
+  const loadFriends = async () => {
     setIsLoading(true);
     setPermissionDenied(false);
 
@@ -52,13 +45,11 @@ export default function ImportContactsScreen() {
     if (currentStatus === 'granted') {
       setHasPermission(true);
     } else if (currentStatus === 'denied') {
-      // Permission was previously denied - need to go to Settings
       setHasPermission(false);
       setPermissionDenied(true);
       setIsLoading(false);
       return;
     } else {
-      // Permission not determined yet - request it
       const { status: newStatus } = await Contacts.requestPermissionsAsync();
       if (newStatus !== 'granted') {
         setHasPermission(false);
@@ -69,12 +60,16 @@ export default function ImportContactsScreen() {
       setHasPermission(true);
     }
 
-    const phoneContacts = await getContactsFromPhone();
-    // Filter out already imported contacts
-    const newContacts = phoneContacts.filter(
-      c => !existingContactIds.has(c.id)
-    );
-    setContacts(newContacts);
+    // Get all friends from contacts
+    const contactFriends = friends.filter(f => f.contactId);
+    setAllFriends(contactFriends);
+
+    // Pre-select friends in active tiers (not 'other')
+    const activeIds = contactFriends
+      .filter(f => f.tier !== 'other')
+      .map(f => f.id);
+    setSelectedIds(new Set(activeIds));
+
     setIsLoading(false);
   };
 
@@ -89,53 +84,54 @@ export default function ImportContactsScreen() {
   };
 
   const selectAll = () => {
-    if (selectedIds.size === filteredContacts.length) {
+    if (selectedIds.size === filteredFriends.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredContacts.map(c => c.id)));
+      setSelectedIds(new Set(filteredFriends.map(f => f.id)));
     }
   };
 
-  const handleImport = async () => {
-    if (selectedIds.size === 0) return;
-
-    setIsImporting(true);
+  const handleSave = async () => {
+    setIsSaving(true);
 
     try {
-      const selectedContacts = contacts.filter(c => selectedIds.has(c.id));
+      // Update all friends based on selection
+      for (const friend of allFriends) {
+        const isSelected = selectedIds.has(friend.id);
+        const isInActiveTier = friend.tier !== 'other';
 
-      for (const contact of selectedContacts) {
-        await addFriend({
-          id: generateId(),
-          name: contact.name,
-          photo: contact.photo,
-          birthday: contact.birthday,
-          phone: contact.phone,
-          relationshipType: 'friend',
-          tier: 'other',
-          isStarred: false,
-          contactFrequencyDays: settings.defaultContactFrequency,
-          contactId: contact.id,
-        });
+        // If selection changed, update the friend's tier
+        if (isSelected && !isInActiveTier) {
+          // Move to 'close' tier and set default contact frequency
+          await updateFriend(friend.id, {
+            tier: 'close',
+            contactFrequencyDays: settings.defaultContactFrequency,
+          });
+        } else if (!isSelected && isInActiveTier) {
+          // Move back to 'other' tier (no active tracking)
+          await updateFriend(friend.id, {
+            tier: 'other',
+          });
+        }
       }
 
       Alert.alert(
         'Success',
-        `Imported ${selectedContacts.length} contact${selectedContacts.length > 1 ? 's' : ''}`,
+        `Updated ${selectedIds.size} friend${selectedIds.size !== 1 ? 's' : ''} for follow-up`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error) {
-      Alert.alert('Error', 'Failed to import contacts. Please try again.');
+      Alert.alert('Error', 'Failed to update friends. Please try again.');
     } finally {
-      setIsImporting(false);
+      setIsSaving(false);
     }
   };
 
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFriends = allFriends.filter(friend =>
+    friend.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderContact = ({ item }: { item: ImportedContact }) => {
+  const renderFriend = ({ item }: { item: Friend }) => {
     const isSelected = selectedIds.has(item.id);
 
     return (
@@ -165,7 +161,7 @@ export default function ImportContactsScreen() {
             <Text style={styles.contactDetail}>{item.phone}</Text>
           )}
           {item.birthday && (
-            <Text style={styles.contactDetail}>Birthday saved</Text>
+            <Text style={styles.contactDetail}>🎂 Birthday saved</Text>
           )}
         </View>
       </TouchableOpacity>
@@ -202,7 +198,7 @@ export default function ImportContactsScreen() {
             <Text style={styles.retryButtonText}>Open Settings</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.retryButton} onPress={loadContacts}>
+          <TouchableOpacity style={styles.retryButton} onPress={loadFriends}>
             <Text style={styles.retryButtonText}>Grant Permission</Text>
           </TouchableOpacity>
         )}
@@ -210,15 +206,15 @@ export default function ImportContactsScreen() {
     );
   }
 
-  if (contacts.length === 0) {
+  if (allFriends.length === 0) {
     return (
       <View style={styles.centered}>
         <View style={styles.emptyIconContainer}>
-          <Text style={styles.emptyIconText}>Done</Text>
+          <Text style={styles.emptyIconText}>📱</Text>
         </View>
-        <Text style={styles.emptyTitle}>All caught up!</Text>
+        <Text style={styles.emptyTitle}>No contacts yet</Text>
         <Text style={styles.emptyText}>
-          All your contacts have already been imported.
+          Your contacts will automatically sync when you add them to your phone.
         </Text>
         <TouchableOpacity
           style={styles.retryButton}
@@ -243,10 +239,17 @@ export default function ImportContactsScreen() {
         />
       </View>
 
+      {/* Header text */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerText}>
+          Select friends to add to your active circle. They'll get follow-up reminders based on your tier settings.
+        </Text>
+      </View>
+
       {/* Select all */}
       <TouchableOpacity style={styles.selectAllRow} onPress={selectAll}>
         <Text style={styles.selectAllText}>
-          {selectedIds.size === filteredContacts.length
+          {selectedIds.size === filteredFriends.length
             ? 'Deselect All'
             : 'Select All'}
         </Text>
@@ -255,31 +258,29 @@ export default function ImportContactsScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* Contacts list */}
+      {/* Friends list */}
       <FlatList
-        data={filteredContacts}
-        renderItem={renderContact}
+        data={filteredFriends}
+        renderItem={renderFriend}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Import button */}
-      {selectedIds.size > 0 && (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.importButton, isImporting && styles.importButtonDisabled]}
-            onPress={handleImport}
-            disabled={isImporting}
-          >
-            <Text style={styles.importButtonText}>
-              {isImporting
-                ? 'Importing...'
-                : `Import ${selectedIds.size} Contact${selectedIds.size > 1 ? 's' : ''}`}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Save button */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.importButton, isSaving && styles.importButtonDisabled]}
+          onPress={handleSave}
+          disabled={isSaving}
+        >
+          <Text style={styles.importButtonText}>
+            {isSaving
+              ? 'Saving...'
+              : 'Save Changes'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -376,6 +377,16 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     ...shadows.sm,
   },
+  headerContainer: {
+    padding: spacing.md,
+    paddingTop: spacing.sm,
+    backgroundColor: colors.background,
+  },
+  headerText: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
   selectAllRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -447,7 +458,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: typography.sizes.lg,
     fontWeight: typography.weights.semibold,
-    color: colors.textPrimary,
+    color: '#FFFFFF',
   },
   contactInfo: {
     flex: 1,

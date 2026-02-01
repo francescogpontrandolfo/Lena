@@ -1,6 +1,6 @@
 // Quick Log Modal Component
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,14 +11,11 @@ import {
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-  ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { format, addDays, subDays } from 'date-fns';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
-import { startVoiceRecording, stopVoiceRecording, transcribeAudioWithMistral, cleanupAudioFile } from '../services/voice';
-import { Audio } from 'expo-av';
 
 interface QuickLogModalProps {
   visible: boolean;
@@ -44,13 +41,20 @@ export default function QuickLogModal({
   const [note, setNote] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isSaving, setIsSaving] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const saveScale = useRef(new Animated.Value(1)).current;
+  const contentFade = useRef(new Animated.Value(0)).current;
 
-  // Reset date to today when modal opens
+  // Animate content when modal opens
   useEffect(() => {
     if (visible) {
       setSelectedDate(new Date());
+      contentFade.setValue(0);
+      Animated.timing(contentFade, {
+        toValue: 1,
+        duration: 300,
+        delay: 150,
+        useNativeDriver: true,
+      }).start();
     }
   }, [visible]);
 
@@ -67,69 +71,10 @@ export default function QuickLogModal({
     setNote(quickNote);
   };
 
-  const handleClose = async () => {
-    // Clean up recording if active
-    if (recording) {
-      try {
-        await recording.stopAndUnloadAsync();
-      } catch (e) {
-        // Ignore cleanup errors
-      }
-    }
+  const handleClose = () => {
     setNote('');
     setSelectedDate(new Date());
-    setIsRecording(false);
-    setRecording(null);
     onClose();
-  };
-
-  const handleVoiceInput = async () => {
-    if (isRecording && recording) {
-      // Stop recording
-      try {
-        const audioUri = await stopVoiceRecording(recording);
-        setIsRecording(false);
-        setRecording(null);
-
-        if (!audioUri) {
-          Alert.alert('Error', 'Failed to save recording.');
-          return;
-        }
-
-        // Show transcribing state
-        Alert.alert('Transcribing', 'Processing your audio...');
-
-        // Transcribe with Mistral
-        const result = await transcribeAudioWithMistral(audioUri);
-
-        // Clean up audio file
-        await cleanupAudioFile(audioUri);
-
-        if (result && result.text) {
-          // Append to existing note or replace if empty
-          setNote(prev => prev ? `${prev} ${result.text}` : result.text);
-        } else {
-          Alert.alert('Voice Input', 'Could not transcribe your voice. Please try again.');
-        }
-      } catch (error) {
-        setIsRecording(false);
-        setRecording(null);
-        Alert.alert('Error', 'Failed to process recording.');
-      }
-    } else {
-      // Start recording
-      try {
-        const newRecording = await startVoiceRecording();
-        if (newRecording) {
-          setRecording(newRecording);
-          setIsRecording(true);
-        } else {
-          Alert.alert('Error', 'Failed to start recording. Please check microphone permissions.');
-        }
-      } catch (error) {
-        Alert.alert('Error', 'Failed to start recording. Please check microphone permissions.');
-      }
-    }
   };
 
   const isToday = format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
@@ -148,6 +93,7 @@ export default function QuickLogModal({
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
               <View style={styles.container}>
+                <Animated.View style={{ opacity: contentFade }}>
                 {/* Header */}
                 <View style={styles.header}>
                   <View style={styles.handle} />
@@ -200,29 +146,17 @@ export default function QuickLogModal({
                   ))}
                 </View>
 
-                {/* Custom note input with voice button */}
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Or write your own note..."
-                    placeholderTextColor={colors.textLight}
-                    value={note}
-                    onChangeText={setNote}
-                    multiline
-                    numberOfLines={3}
-                    maxLength={200}
-                  />
-                  <TouchableOpacity
-                    style={[styles.voiceButton, isRecording && styles.voiceButtonActive]}
-                    onPress={handleVoiceInput}
-                  >
-                    <Feather
-                      name={isRecording ? "mic-off" : "mic"}
-                      size={20}
-                      color={colors.card}
-                    />
-                  </TouchableOpacity>
-                </View>
+                {/* Custom note input */}
+                <TextInput
+                  style={styles.input}
+                  placeholder="Or write your own note..."
+                  placeholderTextColor={colors.textLight}
+                  value={note}
+                  onChangeText={setNote}
+                  multiline
+                  numberOfLines={3}
+                  maxLength={200}
+                />
 
                 {/* Actions */}
                 <View style={styles.actions}>
@@ -232,16 +166,36 @@ export default function QuickLogModal({
                   >
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
-                    onPress={handleSave}
-                    disabled={isSaving}
-                  >
-                    <Text style={styles.saveButtonText}>
-                      {isSaving ? 'Saving...' : 'Save'}
-                    </Text>
-                  </TouchableOpacity>
+                  <Animated.View style={{ flex: 2, transform: [{ scale: saveScale }] }}>
+                    <TouchableOpacity
+                      style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+                      onPress={handleSave}
+                      onPressIn={() => {
+                        Animated.spring(saveScale, {
+                          toValue: 0.95,
+                          tension: 100,
+                          friction: 8,
+                          useNativeDriver: true,
+                        }).start();
+                      }}
+                      onPressOut={() => {
+                        Animated.spring(saveScale, {
+                          toValue: 1,
+                          tension: 100,
+                          friction: 8,
+                          useNativeDriver: true,
+                        }).start();
+                      }}
+                      activeOpacity={1}
+                      disabled={isSaving}
+                    >
+                      <Text style={styles.saveButtonText}>
+                        {isSaving ? 'Saving...' : 'Save'}
+                      </Text>
+                    </TouchableOpacity>
+                  </Animated.View>
                 </View>
+                </Animated.View>
               </View>
             </KeyboardAvoidingView>
           </TouchableWithoutFeedback>
@@ -353,34 +307,15 @@ const styles = StyleSheet.create({
     color: colors.card,
     fontWeight: typography.weights.medium,
   },
-  inputContainer: {
-    position: 'relative',
-    marginBottom: spacing.lg,
-  },
   input: {
     backgroundColor: colors.background,
     borderRadius: borderRadius.md,
     padding: spacing.md,
-    paddingRight: 56, // Make room for voice button
     fontSize: typography.sizes.md,
     color: colors.textPrimary,
     minHeight: 80,
     textAlignVertical: 'top',
-  },
-  voiceButton: {
-    position: 'absolute',
-    right: spacing.sm,
-    bottom: spacing.sm,
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...shadows.sm,
-  },
-  voiceButtonActive: {
-    backgroundColor: colors.secondary,
+    marginBottom: spacing.lg,
   },
   actions: {
     flexDirection: 'row',
@@ -399,7 +334,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   saveButton: {
-    flex: 2,
     padding: spacing.md,
     borderRadius: borderRadius.md,
     backgroundColor: colors.primary,

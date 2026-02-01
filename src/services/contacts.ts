@@ -114,3 +114,59 @@ export async function searchContacts(query: string): Promise<ImportedContact[]> 
     contact.name.toLowerCase().includes(lowerQuery)
   );
 }
+
+// Sync all contacts - import new ones and update existing ones
+export async function syncAllContacts(
+  existingFriends: Friend[],
+  defaultFrequency: number = 14
+): Promise<{ imported: number; updated: number }> {
+  const phoneContacts = await getContactsFromPhone();
+
+  // Create a map of existing friends by contactId
+  const friendsByContactId = new Map<string, Friend>();
+  existingFriends.forEach(friend => {
+    if (friend.contactId) {
+      friendsByContactId.set(friend.contactId, friend);
+    }
+  });
+
+  let imported = 0;
+  let updated = 0;
+
+  const { updateFriendFromContact } = await import('./database');
+
+  for (const contact of phoneContacts) {
+    const existingFriend = friendsByContactId.get(contact.id);
+
+    if (existingFriend) {
+      // Update existing friend with latest contact info
+      const hasChanges =
+        existingFriend.name !== contact.name ||
+        existingFriend.phone !== contact.phone ||
+        existingFriend.birthday !== contact.birthday ||
+        existingFriend.photo !== contact.photo;
+
+      if (hasChanges) {
+        await updateFriendFromContact(existingFriend.id, contact);
+        updated++;
+      }
+    } else {
+      // Import as new friend in 'other' tier (not actively tracked)
+      await createFriend({
+        id: generateId(),
+        name: contact.name,
+        photo: contact.photo,
+        birthday: contact.birthday,
+        phone: contact.phone,
+        relationshipType: 'acquaintance', // Default for auto-imported
+        tier: 'other', // 'other' tier = no active follow-up reminders
+        isStarred: false,
+        contactFrequencyDays: defaultFrequency, // Default frequency for when they're promoted
+        contactId: contact.id,
+      });
+      imported++;
+    }
+  }
+
+  return { imported, updated };
+}

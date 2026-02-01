@@ -1,7 +1,7 @@
 // Navigation Setup for Lena
 
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createBottomTabNavigator, BottomTabBar } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, StyleSheet, Platform } from 'react-native';
@@ -13,6 +13,7 @@ import { colors, spacing, borderRadius, shadows, typography } from '../theme';
 // Screens
 import HomeScreen from '../screens/HomeScreen';
 import FriendsScreen from '../screens/FriendsScreen';
+import SearchScreen from '../screens/SearchScreen';
 import FriendDetailScreen from '../screens/FriendDetailScreen';
 import AddFriendScreen from '../screens/AddFriendScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -28,6 +29,7 @@ export type RootStackParamList = {
 
 export type TabParamList = {
   Home: undefined;
+  Search: undefined;
   Friends: undefined;
   Settings: undefined;
 };
@@ -35,26 +37,22 @@ export type TabParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-// Custom Tab Bar with Liquid Glass Effect
+// Custom Tab Bar with Liquid Glass Effect - Floating Style
 function CustomTabBar(props: any) {
   const insets = useSafeAreaInsets();
 
   return (
-    <BlurView
-      intensity={Platform.OS === 'ios' ? 80 : 60}
-      tint="light"
-      style={[
-        styles.blurContainer,
-        {
-          height: 56 + Math.max(insets.bottom, 8),
-          paddingBottom: Math.max(insets.bottom, 8),
-        },
-      ]}
-    >
-      {/* Warm tint overlay */}
-      <View style={styles.tintOverlay} />
-      <BottomTabBar {...props} />
-    </BlurView>
+    <View style={[styles.floatingContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <BlurView
+        intensity={Platform.OS === 'ios' ? 95 : 80}
+        tint="light"
+        style={styles.blurContainer}
+      >
+        {/* Glass tint overlay with gradient effect */}
+        <View style={styles.tintOverlay} />
+        <BottomTabBar {...props} />
+      </BlurView>
+    </View>
   );
 }
 
@@ -66,6 +64,8 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
         return 'home';
       case 'Friends':
         return 'users';
+      case 'Search':
+        return 'search';
       case 'Settings':
         return 'settings';
       default:
@@ -74,11 +74,11 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   };
 
   const iconName = getIconName(name);
-  const iconColor = focused ? colors.primary : colors.textSecondary;
+  const iconColor = focused ? '#FFFFFF' : colors.textSecondary;
 
   return (
     <View style={[styles.tabIconContainer, focused && styles.tabIconContainerFocused]}>
-      <Feather name={iconName as any} size={24} color={iconColor} />
+      <Feather name={iconName as any} size={22} color={iconColor} />
     </View>
   );
 }
@@ -104,6 +104,11 @@ function MainTabs() {
         name="Home"
         component={HomeScreen}
         options={{ tabBarLabel: 'Home' }}
+      />
+      <Tab.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{ tabBarLabel: 'Search' }}
       />
       <Tab.Screen
         name="Friends"
@@ -160,7 +165,7 @@ export default function Navigation() {
           name="ImportContacts"
           component={ImportContactsScreen}
           options={{
-            title: 'Import from Contacts',
+            title: 'Manage Follow-ups',
             presentation: 'modal',
           }}
         />
@@ -170,49 +175,66 @@ export default function Navigation() {
 }
 
 const styles = StyleSheet.create({
-  // Liquid Glass Container
-  blurContainer: {
+  // Floating container
+  floatingContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    ...shadows.md,
-    overflow: 'hidden',
+    paddingHorizontal: spacing.lg,
+    pointerEvents: 'box-none',
   },
-  // Warm tint overlay for glass effect
+  // Liquid Glass Container - Floating pill shape
+  blurContainer: {
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    ...shadows.lg,
+    // More transparent glass effect
+    backgroundColor: Platform.OS === 'ios' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.85)',
+  },
+  // Glass tint overlay with gradient effect
   tintOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 249, 245, 0.4)', // Subtle warm cream tint
+    backgroundColor: 'rgba(0, 153, 255, 0.04)', // Very subtle electric blue tint
   },
   tabBar: {
-    backgroundColor: 'transparent', // Transparent to show blur
+    backgroundColor: 'transparent',
     borderTopColor: 'transparent',
     borderTopWidth: 0,
-    paddingTop: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
+    paddingBottom: 0,
+    paddingHorizontal: spacing.xs,
     elevation: 0,
+    height: 64,
   },
   tabBarLabel: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.medium,
+    fontSize: 10,
+    fontWeight: typography.weights.semibold,
     marginTop: 2,
+    marginBottom: spacing.xs,
   },
   tabBarItem: {
-    paddingTop: 4,
+    paddingVertical: spacing.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tabIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: borderRadius.sm,
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
   tabIconContainerFocused: {
-    backgroundColor: colors.primaryLight + '40',
+    backgroundColor: colors.primary,
+    // Subtle glow
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });

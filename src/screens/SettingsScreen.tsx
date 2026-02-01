@@ -104,7 +104,7 @@ export default function SettingsScreen() {
             <Switch
               value={settings.notificationsEnabled}
               onValueChange={handleNotificationToggle}
-              trackColor={{ false: colors.border, true: colors.primaryLight }}
+              trackColor={{ false: colors.border, true: colors.primaryMid }}
               thumbColor={settings.notificationsEnabled ? colors.primary : colors.textLight}
               disabled={isCheckingPermission}
             />
@@ -120,7 +120,7 @@ export default function SettingsScreen() {
             <Switch
               value={settings.checkInReminderEnabled}
               onValueChange={handleCheckInToggle}
-              trackColor={{ false: colors.border, true: colors.primaryLight }}
+              trackColor={{ false: colors.border, true: colors.primaryMid }}
               thumbColor={settings.checkInReminderEnabled ? colors.primary : colors.textLight}
             />
           </View>

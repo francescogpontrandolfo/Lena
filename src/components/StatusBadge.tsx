@@ -28,19 +28,19 @@ const STATUS_CONFIG: Record<StatusType, { label: string; icon: string; bgColor: 
   recent: {
     label: 'Recent',
     icon: 'check-circle',
-    bgColor: '#D1FAE5',
-    textColor: '#059669',
+    bgColor: '#E8F4FD',
+    textColor: '#0077CC',
   },
   birthday: {
     label: 'Birthday!',
     icon: 'gift',
-    bgColor: '#FCE7F3',
-    textColor: '#DB2777',
+    bgColor: '#FFE0EB',
+    textColor: '#E55585',
   },
   new: {
     label: 'New friend',
     icon: 'user-plus',
-    bgColor: '#E0E7FF',
+    bgColor: '#EEF0FF',
     textColor: '#4F46E5',
   },
 };

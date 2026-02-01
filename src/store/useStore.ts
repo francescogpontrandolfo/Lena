@@ -61,6 +61,35 @@ export const useStore = create<LenaStore>((set, get) => ({
         isLoading: false,
         isInitialized: true,
       });
+
+      // Auto-sync contacts in background (don't block app initialization)
+      setTimeout(async () => {
+        try {
+          const { syncAllContacts, hasContactsPermission } = await import('../services/contacts');
+          const { scheduleBirthdayNotificationsForAll } = await import('../services/notifications');
+          const hasPermission = await hasContactsPermission();
+
+          if (hasPermission) {
+            const currentFriends = get().friends;
+            const { imported, updated } = await syncAllContacts(currentFriends, get().settings.defaultContactFrequency);
+
+            if (imported > 0 || updated > 0) {
+              console.log(`Synced contacts: ${imported} imported, ${updated} updated`);
+              await get().loadFriends();
+            }
+          }
+
+          // Schedule birthday notifications for all friends with birthdays
+          const allFriends = get().friends;
+          const { scheduled, skipped } = await scheduleBirthdayNotificationsForAll(
+            allFriends,
+            get().settings.birthdayReminderTime
+          );
+          console.log(`Birthday notifications: ${scheduled} scheduled, ${skipped} skipped`);
+        } catch (error) {
+          console.error('Background contact sync failed:', error);
+        }
+      }, 1000);
     } catch (error) {
       console.error('Failed to initialize:', error);
       set({ isLoading: false });
@@ -210,8 +239,8 @@ export const useStore = create<LenaStore>((set, get) => ({
         }
       }
 
-      // Check for check-in suggestions
-      if (settings.checkInReminderEnabled) {
+      // Check for check-in suggestions - ONLY for friends in active tiers (not 'other')
+      if (settings.checkInReminderEnabled && friend.tier !== 'other') {
         const daysSinceContact = friend.lastContactedAt
           ? differenceInDays(today, new Date(friend.lastContactedAt))
           : Infinity;
@@ -253,7 +282,7 @@ export const useStore = create<LenaStore>((set, get) => ({
     // Get IDs of friends already in urgent timeline (check-in suggestions)
     const urgentFriendIds = new Set<string>();
     friends.forEach(friend => {
-      if (settings.checkInReminderEnabled) {
+      if (settings.checkInReminderEnabled && friend.tier !== 'other') {
         const daysSinceContact = friend.lastContactedAt
           ? differenceInDays(today, new Date(friend.lastContactedAt))
           : Infinity;
@@ -263,9 +292,9 @@ export const useStore = create<LenaStore>((set, get) => ({
       }
     });
 
-    // Build backlog from friends NOT in urgent timeline
+    // Build backlog from friends NOT in urgent timeline - ONLY active tiers
     friends.forEach(friend => {
-      if (urgentFriendIds.has(friend.id)) return; // Skip urgent ones
+      if (urgentFriendIds.has(friend.id) || friend.tier === 'other') return; // Skip urgent ones and 'other' tier
 
       const daysSinceContact = friend.lastContactedAt
         ? differenceInDays(today, new Date(friend.lastContactedAt))

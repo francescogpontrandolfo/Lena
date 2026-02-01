@@ -207,6 +207,18 @@ export async function updateFriend(id: string, updates: Partial<Friend>): Promis
   );
 }
 
+export async function updateFriendFromContact(
+  friendId: string,
+  contact: { name: string; phone?: string; birthday?: string; photo?: string }
+): Promise<void> {
+  await updateFriend(friendId, {
+    name: contact.name,
+    phone: contact.phone,
+    birthday: contact.birthday,
+    photo: contact.photo,
+  });
+}
+
 export async function deleteFriend(id: string): Promise<void> {
   await getDb().runAsync('DELETE FROM friends WHERE id = ?', [id]);
 }

@@ -1,6 +1,6 @@
 // Home Screen - Timeline with suggestions
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -25,6 +26,26 @@ export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { friends, isLoading, loadFriends, getTimelineItems, getBacklogItems } = useStore();
   const [refreshing, setRefreshing] = React.useState(false);
+
+  // Header fade-in
+  const headerFade = useRef(new Animated.Value(0)).current;
+  const headerSlide = useRef(new Animated.Value(-15)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(headerFade, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.spring(headerSlide, {
+        toValue: 0,
+        tension: 60,
+        friction: 12,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const timelineItems = getTimelineItems();
   const backlogItems = getBacklogItems();
@@ -68,7 +89,10 @@ export default function HomeScreen() {
         }
       >
         {/* Header */}
-        <View style={styles.header}>
+        <Animated.View style={[styles.header, {
+          opacity: headerFade,
+          transform: [{ translateY: headerSlide }],
+        }]}>
           <Text style={styles.greeting}>{getGreeting()}</Text>
           <View style={styles.titleRow}>
             <Text style={styles.title}>Lena</Text>
@@ -81,7 +105,7 @@ export default function HomeScreen() {
                 : 'All caught up!'}
             </Text>
           )}
-        </View>
+        </Animated.View>
 
         {friends.length === 0 ? (
           <EmptyState
@@ -106,11 +130,12 @@ export default function HomeScreen() {
                   <View style={[styles.sectionAccent, { backgroundColor: colors.secondary }]} />
                   <Text style={styles.sectionTitle}>Today</Text>
                 </View>
-                {todayItems.map(item => (
+                {todayItems.map((item, index) => (
                   <TimelineCard
                     key={item.id}
                     item={item}
                     onPress={() => handleItemPress(item)}
+                    index={index}
                   />
                 ))}
               </View>
@@ -123,11 +148,12 @@ export default function HomeScreen() {
                   <View style={[styles.sectionAccent, { backgroundColor: colors.accent }]} />
                   <Text style={styles.sectionTitle}>This Week</Text>
                 </View>
-                {upcomingItems.map(item => (
+                {upcomingItems.map((item, index) => (
                   <TimelineCard
                     key={item.id}
                     item={item}
                     onPress={() => handleItemPress(item)}
+                    index={index}
                   />
                 ))}
               </View>
@@ -140,11 +166,12 @@ export default function HomeScreen() {
                   <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
                   <Text style={styles.sectionTitle}>Catch Up</Text>
                 </View>
-                {backlogItems.map(item => (
+                {backlogItems.map((item, index) => (
                   <TimelineCard
                     key={item.id}
                     item={item}
                     onPress={() => handleItemPress(item)}
+                    index={index}
                   />
                 ))}
               </View>

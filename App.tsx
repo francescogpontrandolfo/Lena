@@ -1,17 +1,18 @@
 // Lena - Friend Relationship Manager
 // Main App Entry Point
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Navigation from './src/navigation';
 import { useStore } from './src/store/useStore';
 import { colors, typography } from './src/theme';
 
 function AppContent() {
-  const { initialize, isLoading, isInitialized } = useStore();
+  const { initialize, isLoading, isInitialized, loadFriends, friends, settings } = useStore();
   const [error, setError] = useState<string | null>(null);
+  const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     const init = async () => {
@@ -25,6 +26,44 @@ function AppContent() {
 
     init();
   }, [initialize]);
+
+  // Listen for app state changes to sync contacts when app comes to foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active' &&
+        isInitialized
+      ) {
+        // App has come to foreground - sync contacts
+        try {
+          const { syncAllContacts, hasContactsPermission } = await import('./src/services/contacts');
+          const { scheduleBirthdayNotificationsForAll } = await import('./src/services/notifications');
+
+          const hasPermission = await hasContactsPermission();
+          if (hasPermission) {
+            const { imported, updated } = await syncAllContacts(friends, settings.defaultContactFrequency);
+            if (imported > 0 || updated > 0) {
+              console.log(`Contacts synced on foreground: ${imported} imported, ${updated} updated`);
+              await loadFriends();
+
+              // Re-schedule birthday notifications
+              const allFriends = useStore.getState().friends;
+              await scheduleBirthdayNotificationsForAll(allFriends, settings.birthdayReminderTime);
+            }
+          }
+        } catch (error) {
+          console.error('Foreground contact sync failed:', error);
+        }
+      }
+
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isInitialized, friends, settings, loadFriends]);
 
   if (error) {
     return (

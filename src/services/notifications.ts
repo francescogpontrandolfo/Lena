@@ -162,3 +162,38 @@ export function addNotificationReceivedListener(
 ): Notifications.EventSubscription {
   return Notifications.addNotificationReceivedListener(callback);
 }
+
+// Schedule birthday notifications for all friends with birthdays
+export async function scheduleBirthdayNotificationsForAll(
+  friends: Friend[],
+  reminderTime: string = '09:00'
+): Promise<{ scheduled: number; skipped: number }> {
+  const hasPermission = await hasNotificationPermission();
+  if (!hasPermission) {
+    return { scheduled: 0, skipped: friends.filter(f => f.birthday).length };
+  }
+
+  // Cancel all existing birthday notifications first
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  for (const notification of scheduled) {
+    if (notification.content.data?.type === 'birthday') {
+      await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+    }
+  }
+
+  let scheduledCount = 0;
+  let skippedCount = 0;
+
+  for (const friend of friends) {
+    if (friend.birthday) {
+      const identifier = await scheduleBirthdayNotification(friend, reminderTime);
+      if (identifier) {
+        scheduledCount++;
+      } else {
+        skippedCount++;
+      }
+    }
+  }
+
+  return { scheduled: scheduledCount, skipped: skippedCount };
+}
