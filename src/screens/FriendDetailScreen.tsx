@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   Alert,
   Linking,
   Animated,
@@ -25,6 +24,7 @@ import StatusBadge, { getContactStatus } from '../components/StatusBadge';
 import InteractionTimeline from '../components/InteractionTimeline';
 import EditChipModal from '../components/EditChipModal';
 import DatePickerModal from '../components/DatePickerModal';
+import Avatar from '../components/Avatar';
 
 type EditModalType = 'birthday' | 'tier' | 'frequency' | null;
 
@@ -186,15 +186,12 @@ export default function FriendDetailScreen() {
           <View style={styles.heroTop}>
             {/* Avatar */}
             <View style={styles.avatarSection}>
-              {friend.photo ? (
-                <Image source={{ uri: friend.photo }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatarPlaceholder, { backgroundColor: RELATIONSHIP_COLORS[friend.relationshipType] }]}>
-                  <Text style={styles.avatarText}>
-                    {friend.name.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
+              <Avatar
+                name={friend.name}
+                photo={friend.photo}
+                size={80}
+                color={RELATIONSHIP_COLORS[friend.relationshipType]}
+              />
             </View>
 
             {/* Info */}
@@ -214,50 +211,56 @@ export default function FriendDetailScreen() {
           </View>
 
           {/* Info Chips - All tappable/editable */}
-          <View style={styles.chipsRow}>
-            {/* Birthday Chip */}
-            <TouchableOpacity
-              style={styles.chip}
-              onPress={() => setActiveEditModal('birthday')}
-              activeOpacity={0.7}
-            >
-              <Feather name="gift" size={16} color={colors.textSecondary} />
-              <View style={styles.chipTextContainer}>
-                <Text style={styles.chipValue} numberOfLines={1}>
-                  {friend.birthday ? format(new Date(friend.birthday), 'MMM d') : 'Add'}
-                </Text>
-                <Text style={styles.chipLabel}>Birthday</Text>
-              </View>
-              <Feather name="chevron-right" size={14} color={colors.textLight} />
-            </TouchableOpacity>
+          <View style={styles.chipsContainer}>
+            {/* Row 1: Birthday + Frequency */}
+            <View style={styles.chipsRow}>
+              {/* Birthday Chip */}
+              <TouchableOpacity
+                style={styles.chip}
+                onPress={() => setActiveEditModal('birthday')}
+                activeOpacity={0.7}
+              >
+                <Feather name="gift" size={16} color={colors.textSecondary} />
+                <View style={styles.chipTextContainer}>
+                  <Text style={styles.chipValue} numberOfLines={1}>
+                    {friend.birthday ? format(new Date(friend.birthday), 'MMM d') : 'Add'}
+                  </Text>
+                  <Text style={styles.chipLabel}>Birthday</Text>
+                </View>
+                <Feather name="chevron-right" size={14} color={colors.textLight} />
+              </TouchableOpacity>
 
-            {/* Frequency Chip */}
-            <TouchableOpacity
-              style={styles.chip}
-              onPress={() => setActiveEditModal('frequency')}
-              activeOpacity={0.7}
-            >
-              <Feather name="calendar" size={16} color={colors.textSecondary} />
-              <View style={styles.chipTextContainer}>
-                <Text style={styles.chipValue} numberOfLines={1}>{getFrequencyLabel(friend.contactFrequencyDays)}</Text>
-                <Text style={styles.chipLabel}>Frequency</Text>
-              </View>
-              <Feather name="chevron-right" size={14} color={colors.textLight} />
-            </TouchableOpacity>
+              {/* Frequency Chip */}
+              <TouchableOpacity
+                style={styles.chip}
+                onPress={() => setActiveEditModal('frequency')}
+                activeOpacity={0.7}
+              >
+                <Feather name="calendar" size={16} color={colors.textSecondary} />
+                <View style={styles.chipTextContainer}>
+                  <Text style={styles.chipValue} numberOfLines={1}>{getFrequencyLabel(friend.contactFrequencyDays)}</Text>
+                  <Text style={styles.chipLabel}>Frequency</Text>
+                </View>
+                <Feather name="chevron-right" size={14} color={colors.textLight} />
+              </TouchableOpacity>
+            </View>
 
-            {/* Tier Chip */}
-            <TouchableOpacity
-              style={styles.chip}
-              onPress={() => setActiveEditModal('tier')}
-              activeOpacity={0.7}
-            >
-              <Feather name="star" size={16} color={colors.textSecondary} />
-              <View style={styles.chipTextContainer}>
-                <Text style={styles.chipValue} numberOfLines={1}>{TIER_LABELS[friend.tier]}</Text>
-                <Text style={styles.chipLabel}>Tier</Text>
-              </View>
-              <Feather name="chevron-right" size={14} color={colors.textLight} />
-            </TouchableOpacity>
+            {/* Row 2: Tier (full width) */}
+            <View style={styles.chipsRow}>
+              {/* Tier Chip */}
+              <TouchableOpacity
+                style={styles.chip}
+                onPress={() => setActiveEditModal('tier')}
+                activeOpacity={0.7}
+              >
+                <Feather name="star" size={16} color={colors.textSecondary} />
+                <View style={styles.chipTextContainer}>
+                  <Text style={styles.chipValue} numberOfLines={1}>{TIER_LABELS[friend.tier]}</Text>
+                  <Text style={styles.chipLabel}>Tier</Text>
+                </View>
+                <Feather name="chevron-right" size={14} color={colors.textLight} />
+              </TouchableOpacity>
+            </View>
           </View>
         </Animated.View>
 
@@ -317,6 +320,7 @@ export default function FriendDetailScreen() {
       <QuickLogModal
         visible={showLogModal}
         friendName={friend.name}
+        friendId={friend.id}
         onClose={() => setShowLogModal(false)}
         onSave={handleLogInteraction}
       />
@@ -334,9 +338,9 @@ export default function FriendDetailScreen() {
         visible={activeEditModal === 'tier'}
         title="Set Priority Tier"
         options={[
-          { value: 'top', label: 'Top - Your closest friends' },
-          { value: 'close', label: 'Close - Good friends' },
-          { value: 'cordialities', label: 'Cordialities - Casual friends' },
+          { value: 'top', label: 'Clique - Your closest friends' },
+          { value: 'close', label: 'Good friends' },
+          { value: 'cordialities', label: 'Catch-up - Casual friends' },
           { value: 'other', label: 'Other - Everyone else' },
         ]}
         selectedValue={friend.tier}
@@ -377,7 +381,7 @@ const styles = StyleSheet.create({
 
   // Hero Card
   heroCard: {
-    backgroundColor: colors.card,
+    backgroundColor: '#F3F4F6',
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
     marginBottom: spacing.lg,
@@ -389,23 +393,6 @@ const styles = StyleSheet.create({
   },
   avatarSection: {
     marginRight: spacing.lg,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: typography.weights.bold,
-    color: colors.card,
   },
   infoSection: {
     flex: 1,
@@ -438,9 +425,11 @@ const styles = StyleSheet.create({
   },
 
   // Info Chips (tappable)
+  chipsContainer: {
+    gap: spacing.sm,
+  },
   chipsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: spacing.sm,
   },
   chip: {
@@ -448,23 +437,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.background,
-    padding: spacing.sm,
+    padding: spacing.md,
     borderRadius: borderRadius.md,
-    gap: spacing.xs,
-    minHeight: 60,
+    gap: 8,
+    minHeight: 80,
   },
   chipTextContainer: {
     flex: 1,
     marginRight: spacing.xs,
   },
   chipValue: {
-    fontSize: typography.sizes.xs,
+    fontSize: 16,
     fontWeight: typography.weights.semibold,
     color: colors.textPrimary,
     numberOfLines: 1,
   },
   chipLabel: {
-    fontSize: 10,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
   },

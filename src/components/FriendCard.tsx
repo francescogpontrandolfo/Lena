@@ -1,31 +1,11 @@
 // Friend Card Component
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { differenceInDays } from 'date-fns';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { Friend } from '../types';
-
-// Avatar colors - muted tones that work well with white text
-const AVATAR_COLORS = [
-  '#7C9EB2',  // blue
-  '#8E9AAF',  // slate
-  '#9B8AA5',  // purple
-  '#7BA38C',  // sage
-  '#A5927C',  // tan
-  '#8FA5A5',  // teal
-  '#A58C8C',  // dusty rose
-  '#8C8FA5',  // periwinkle
-];
-
-// Get consistent color based on name
-const getAvatarColor = (name: string): string => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
+import Avatar from './Avatar';
 
 interface FriendCardProps {
   friend: Friend;
@@ -67,20 +47,7 @@ export default function FriendCard({ friend, onPress }: FriendCardProps) {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
       {/* Avatar */}
-      {friend.photo ? (
-        <Image source={{ uri: friend.photo }} style={styles.avatar} />
-      ) : (
-        <View
-          style={[
-            styles.avatarPlaceholder,
-            { backgroundColor: getAvatarColor(friend.name) },
-          ]}
-        >
-          <Text style={styles.avatarText}>
-            {friend.name.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-      )}
+      <Avatar name={friend.name} photo={friend.photo} size={52} />
 
       {/* Info */}
       <View style={styles.info}>
@@ -125,23 +92,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     marginBottom: spacing.sm,
     ...shadows.sm,
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-  },
-  avatarPlaceholder: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.semibold,
-    color: colors.textPrimary,
   },
   info: {
     flex: 1,

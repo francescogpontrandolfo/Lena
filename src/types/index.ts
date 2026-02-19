@@ -98,29 +98,29 @@ export const RELATIONSHIP_LABELS: Record<RelationshipType, string> = {
   acquaintance: 'Acquaintance',
 };
 
-// Relationship type colors (for badges) - Electric palette
+// Relationship type colors (for badges) - Elegant Sunset palette
 export const RELATIONSHIP_COLORS: Record<RelationshipType, string> = {
-  close_friend: '#FF6B9D',  // vibrant pink
-  friend: '#0099FF',        // electric blue
-  family: '#6366F1',        // electric indigo
-  colleague: '#F59E0B',     // amber
-  acquaintance: '#94A3B8',  // slate
+  close_friend: '#D9853B',  // golden orange - warm, close
+  friend: '#C4956C',        // dusty amber - friendly warmth
+  family: '#9B8FAA',        // muted lavender - family connection
+  colleague: '#A67A52',     // deep amber - professional
+  acquaintance: '#8E7F76',  // warm brown - casual
 };
 
 // Friend tier labels
 export const TIER_LABELS: Record<FriendTier, string> = {
-  top: 'Top',
-  close: 'Close',
-  cordialities: 'Cordialities',
+  top: 'Clique',
+  close: 'Good friends',
+  cordialities: 'Catch-up',
   other: 'Other',
 };
 
-// Friend tier colors - Electric palette
+// Friend tier colors - Elegant Sunset palette
 export const TIER_COLORS: Record<FriendTier, string> = {
-  top: '#FF6B9D',           // vibrant pink - most important
-  close: '#0099FF',         // electric blue
-  cordialities: '#6366F1',  // electric indigo
-  other: '#94A3B8',         // slate
+  top: '#D9853B',           // golden orange - most important
+  close: '#C4956C',         // dusty amber - close connections
+  cordialities: '#9B8FAA',  // muted lavender - casual friendships
+  other: '#8E7F76',         // warm brown - other contacts
 };
 
 // Contact frequency options

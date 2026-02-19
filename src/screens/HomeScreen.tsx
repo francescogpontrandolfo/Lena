@@ -18,13 +18,14 @@ import { useStore } from '../store/useStore';
 import { TimelineItem } from '../types';
 import { RootStackParamList } from '../navigation';
 import TimelineCard from '../components/TimelineCard';
+import SwipeableTimelineCard from '../components/SwipeableTimelineCard';
 import EmptyState from '../components/EmptyState';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { friends, isLoading, loadFriends, getTimelineItems, getBacklogItems } = useStore();
+  const { friends, isLoading, loadFriends, getTimelineItems, addInteraction, snoozeFriend } = useStore();
   const [refreshing, setRefreshing] = React.useState(false);
 
   // Header fade-in
@@ -48,7 +49,6 @@ export default function HomeScreen() {
   }, []);
 
   const timelineItems = getTimelineItems();
-  const backlogItems = getBacklogItems();
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -60,6 +60,14 @@ export default function HomeScreen() {
     const isBirthday = item.type === 'birthday_today' || item.type === 'birthday_upcoming';
     navigation.navigate('FriendDetail', { friendId: item.friend.id, isBirthday });
   };
+
+  const handleSwipeRight = React.useCallback(async (item: TimelineItem) => {
+    await addInteraction(item.friend.id, 'Quick check-in');
+  }, [addInteraction]);
+
+  const handleSwipeLeft = React.useCallback(async (item: TimelineItem) => {
+    await snoozeFriend(item.friend.id);
+  }, [snoozeFriend]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -130,14 +138,25 @@ export default function HomeScreen() {
                   <View style={[styles.sectionAccent, { backgroundColor: colors.secondary }]} />
                   <Text style={styles.sectionTitle}>Today</Text>
                 </View>
-                {todayItems.map((item, index) => (
-                  <TimelineCard
-                    key={item.id}
-                    item={item}
-                    onPress={() => handleItemPress(item)}
-                    index={index}
-                  />
-                ))}
+                {todayItems.map((item, index) =>
+                  item.type === 'birthday_today' ? (
+                    <TimelineCard
+                      key={item.id}
+                      item={item}
+                      onPress={() => handleItemPress(item)}
+                      index={index}
+                    />
+                  ) : (
+                    <SwipeableTimelineCard
+                      key={item.id}
+                      item={item}
+                      onPress={() => handleItemPress(item)}
+                      onSwipeRight={handleSwipeRight}
+                      onSwipeLeft={handleSwipeLeft}
+                      index={index}
+                    />
+                  )
+                )}
               </View>
             )}
 
@@ -149,24 +168,6 @@ export default function HomeScreen() {
                   <Text style={styles.sectionTitle}>This Week</Text>
                 </View>
                 {upcomingItems.map((item, index) => (
-                  <TimelineCard
-                    key={item.id}
-                    item={item}
-                    onPress={() => handleItemPress(item)}
-                    index={index}
-                  />
-                ))}
-              </View>
-            )}
-
-            {/* Backlog section */}
-            {backlogItems.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
-                  <Text style={styles.sectionTitle}>Catch Up</Text>
-                </View>
-                {backlogItems.map((item, index) => (
                   <TimelineCard
                     key={item.id}
                     item={item}

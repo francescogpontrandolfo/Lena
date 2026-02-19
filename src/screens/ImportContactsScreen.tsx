@@ -8,7 +8,6 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  Image,
   Alert,
   ActivityIndicator,
   Linking,
@@ -18,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { useStore } from '../store/useStore';
 import { Friend } from '../types';
+import Avatar from '../components/Avatar';
 
 export default function ImportContactsScreen() {
   const navigation = useNavigation();
@@ -145,15 +145,9 @@ export default function ImportContactsScreen() {
           </View>
         </View>
 
-        {item.photo ? (
-          <Image source={{ uri: item.photo }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>
-              {item.name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        )}
+        <View style={styles.avatarWrapper}>
+          <Avatar name={item.name} photo={item.photo} size={44} />
+        </View>
 
         <View style={styles.contactInfo}>
           <Text style={styles.contactName}>{item.name}</Text>
@@ -440,25 +434,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: typography.weights.bold,
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  avatarWrapper: {
     marginRight: spacing.md,
-  },
-  avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  avatarText: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold,
-    color: '#FFFFFF',
   },
   contactInfo: {
     flex: 1,

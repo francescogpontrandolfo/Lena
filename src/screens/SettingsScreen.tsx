@@ -27,7 +27,7 @@ const FREQUENCY_OPTIONS = [
 ];
 
 export default function SettingsScreen() {
-  const { settings, updateSettings } = useStore();
+  const { settings, updateSettings, resetAllLastContacted } = useStore();
   const [isCheckingPermission, setIsCheckingPermission] = useState(false);
 
   const handleNotificationToggle = async (value: boolean) => {
@@ -163,6 +163,32 @@ export default function SettingsScreen() {
               ))}
             </View>
           </View>
+        </View>
+
+        {/* Demo section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Demo</Text>
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={() => {
+              Alert.alert(
+                'Reset Timeline',
+                'This will make all swiped cards reappear on the Home timeline.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Reset',
+                    onPress: async () => {
+                      await resetAllLastContacted();
+                      Alert.alert('Done', 'All timeline cards have been restored.');
+                    },
+                  },
+                ]
+              );
+            }}
+          >
+            <Text style={styles.testButtonText}>Reset Timeline Cards</Text>
+          </TouchableOpacity>
         </View>
 
         {/* About section */}

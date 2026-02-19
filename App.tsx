@@ -13,6 +13,7 @@ function AppContent() {
   const { initialize, isLoading, isInitialized, loadFriends, friends, settings } = useStore();
   const [error, setError] = useState<string | null>(null);
   const appState = useRef(AppState.currentState);
+  const backgroundedAt = useRef<number | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -30,30 +31,42 @@ function AppContent() {
   // Listen for app state changes to sync contacts when app comes to foreground
   useEffect(() => {
     const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      if (
-        appState.current.match(/inactive|background/) &&
-        nextAppState === 'active' &&
-        isInitialized
-      ) {
-        // App has come to foreground - sync contacts
-        try {
-          const { syncAllContacts, hasContactsPermission } = await import('./src/services/contacts');
-          const { scheduleBirthdayNotificationsForAll } = await import('./src/services/notifications');
+      const wasBackground = appState.current.match(/inactive|background/);
+      const isNowActive = nextAppState === 'active';
 
-          const hasPermission = await hasContactsPermission();
-          if (hasPermission) {
-            const { imported, updated } = await syncAllContacts(friends, settings.defaultContactFrequency);
-            if (imported > 0 || updated > 0) {
-              console.log(`Contacts synced on foreground: ${imported} imported, ${updated} updated`);
-              await loadFriends();
+      if (wasBackground && !isNowActive) {
+        // Just went to background - record timestamp
+        backgroundedAt.current = Date.now();
+      }
 
-              // Re-schedule birthday notifications
-              const allFriends = useStore.getState().friends;
-              await scheduleBirthdayNotificationsForAll(allFriends, settings.birthdayReminderTime);
+      if (wasBackground && isNowActive && isInitialized) {
+        // Only sync if we were in background for more than 60 seconds
+        const timeInBackground = backgroundedAt.current
+          ? Date.now() - backgroundedAt.current
+          : Infinity;
+
+        if (timeInBackground > 60_000) {
+          // Run sync in background after a short delay so the UI renders first
+          setTimeout(async () => {
+            try {
+              const { syncAllContacts, hasContactsPermission } = await import('./src/services/contacts');
+              const { scheduleBirthdayNotificationsForAll } = await import('./src/services/notifications');
+
+              const hasPermission = await hasContactsPermission();
+              if (hasPermission) {
+                const { imported, updated } = await syncAllContacts(friends, settings.defaultContactFrequency);
+                if (imported > 0 || updated > 0) {
+                  console.log(`Contacts synced on foreground: ${imported} imported, ${updated} updated`);
+                  await loadFriends();
+
+                  const allFriends = useStore.getState().friends;
+                  await scheduleBirthdayNotificationsForAll(allFriends, settings.birthdayReminderTime);
+                }
+              }
+            } catch (error) {
+              console.error('Foreground contact sync failed:', error);
             }
-          }
-        } catch (error) {
-          console.error('Foreground contact sync failed:', error);
+          }, 3000);
         }
       }
 

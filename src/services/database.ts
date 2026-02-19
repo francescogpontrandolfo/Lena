@@ -324,6 +324,15 @@ export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+// Reset lastContactedAt for all friends (for demo purposes)
+export async function resetAllLastContacted(): Promise<void> {
+  const now = new Date().toISOString();
+  await getDb().runAsync(
+    'UPDATE friends SET lastContactedAt = NULL, updatedAt = ?',
+    [now]
+  );
+}
+
 // Get friends who haven't been contacted within their frequency
 export async function getFriendsNeedingContact(): Promise<Friend[]> {
   const friends = await getAllFriends();

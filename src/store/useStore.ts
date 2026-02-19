@@ -27,6 +27,8 @@ interface LenaStore {
   deleteFriend: (id: string) => Promise<void>;
   loadInteractions: (friendId: string) => Promise<void>;
   addInteraction: (friendId: string, note: string, date?: Date) => Promise<void>;
+  snoozeFriend: (friendId: string) => Promise<void>;
+  resetAllLastContacted: () => Promise<void>;
   updateSettings: (settings: Partial<Settings>) => Promise<void>;
   getTimelineItems: () => TimelineItem[];
   getBacklogItems: () => TimelineItem[];
@@ -89,7 +91,7 @@ export const useStore = create<LenaStore>((set, get) => ({
         } catch (error) {
           console.error('Background contact sync failed:', error);
         }
-      }, 1000);
+      }, 5000);
     } catch (error) {
       console.error('Failed to initialize:', error);
       set({ isLoading: false });
@@ -98,8 +100,12 @@ export const useStore = create<LenaStore>((set, get) => ({
 
   // Load/reload friends
   loadFriends: async () => {
-    const friends = await db.getAllFriends();
-    set({ friends });
+    try {
+      const friends = await db.getAllFriends();
+      set({ friends });
+    } catch (error) {
+      console.error('Failed to load friends:', error);
+    }
   },
 
   // Add a new friend
@@ -141,14 +147,18 @@ export const useStore = create<LenaStore>((set, get) => ({
 
   // Load interactions for a friend
   loadInteractions: async (friendId) => {
-    const interactions = await db.getInteractionsForFriend(friendId);
+    try {
+      const interactions = await db.getInteractionsForFriend(friendId);
 
-    set(state => ({
-      interactions: {
-        ...state.interactions,
-        [friendId]: interactions,
-      },
-    }));
+      set(state => ({
+        interactions: {
+          ...state.interactions,
+          [friendId]: interactions,
+        },
+      }));
+    } catch (error) {
+      console.error('Failed to load interactions:', error);
+    }
   },
 
   // Add an interaction (quick log)
@@ -177,13 +187,40 @@ export const useStore = create<LenaStore>((set, get) => ({
     }));
   },
 
-  // Update settings
-  updateSettings: async (newSettings) => {
-    await db.saveSettings(newSettings);
+  // Snooze a friend - reset lastContactedAt without logging an interaction
+  snoozeFriend: async (friendId) => {
+    const now = new Date().toISOString();
+    await db.updateFriend(friendId, { lastContactedAt: now });
 
     set(state => ({
-      settings: { ...state.settings, ...newSettings },
+      friends: state.friends.map(f =>
+        f.id === friendId
+          ? { ...f, lastContactedAt: now, updatedAt: now }
+          : f
+      ),
     }));
+  },
+
+  // Reset all lastContactedAt to null (for demo purposes)
+  resetAllLastContacted: async () => {
+    await db.resetAllLastContacted();
+    set(state => ({
+      friends: state.friends.map(f => ({ ...f, lastContactedAt: undefined })),
+    }));
+  },
+
+  // Update settings
+  updateSettings: async (newSettings) => {
+    try {
+      await db.saveSettings(newSettings);
+
+      set(state => ({
+        settings: { ...state.settings, ...newSettings },
+      }));
+    } catch (error) {
+      console.error('Failed to update settings:', error);
+      throw error;
+    }
   },
 
   // Get friend by ID
@@ -252,8 +289,8 @@ export const useStore = create<LenaStore>((set, get) => ({
             friend,
             title: `Reach out to ${friend.name}`,
             subtitle: friend.lastContactedAt
-              ? `Last contact: ${daysSinceContact} days ago`
-              : 'Time to reconnect!',
+              ? `Last catch-up ${daysSinceContact} days ago`
+              : '',
             date: today.toISOString(),
             priority: Math.min(30, daysSinceContact / friend.contactFrequencyDays * 10),
           });

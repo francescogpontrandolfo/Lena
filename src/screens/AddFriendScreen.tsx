@@ -16,6 +16,8 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { format, parse } from 'date-fns';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { useStore } from '../store/useStore';
 import {
@@ -54,6 +56,7 @@ export default function AddFriendScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const friendId = route.params?.friendId;
+  const defaultTier = (route.params?.defaultTier as FriendTier) || 'other';
 
   const { getFriendById, addFriend, updateFriend } = useStore();
   const existingFriend = friendId ? getFriendById(friendId) : null;
@@ -64,10 +67,24 @@ export default function AddFriendScreen() {
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
   const [relationshipType, setRelationshipType] = useState<RelationshipType>('friend');
-  const [tier, setTier] = useState<FriendTier>('other');
+  const [tier, setTier] = useState<FriendTier>(defaultTier);
   const [isStarred, setIsStarred] = useState(false);
   const [contactFrequency, setContactFrequency] = useState(14);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const birthdayDate = birthday
+    ? parse(birthday, 'yyyy-MM-dd', new Date())
+    : new Date(2000, 0, 1);
+
+  const handleDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setBirthday(format(selectedDate, 'yyyy-MM-dd'));
+    }
+  };
 
   useEffect(() => {
     if (existingFriend) {
@@ -102,22 +119,9 @@ export default function AddFriendScreen() {
     }
   };
 
-  const validateBirthday = (value: string): boolean => {
-    if (!value) return true;
-    const regex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!regex.test(value)) return false;
-    const date = new Date(value);
-    return !isNaN(date.getTime());
-  };
-
   const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter a name');
-      return;
-    }
-
-    if (birthday && !validateBirthday(birthday)) {
-      Alert.alert('Error', 'Please enter birthday in YYYY-MM-DD format');
       return;
     }
 
@@ -271,14 +275,33 @@ export default function AddFriendScreen() {
         {/* Birthday */}
         <View style={styles.field}>
           <Text style={styles.label}>Birthday</Text>
-          <TextInput
-            style={styles.input}
-            value={birthday}
-            onChangeText={setBirthday}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textLight}
-            keyboardType="numbers-and-punctuation"
-          />
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowDatePicker(!showDatePicker)}
+          >
+            <Text style={birthday ? styles.dateText : styles.datePlaceholder}>
+              {birthday ? format(birthdayDate, 'MMMM d, yyyy') : 'Select birthday'}
+            </Text>
+            {birthday ? (
+              <TouchableOpacity
+                onPress={() => { setBirthday(''); setShowDatePicker(false); }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.dateClear}>Clear</Text>
+              </TouchableOpacity>
+            ) : null}
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={birthdayDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+              minimumDate={new Date(1920, 0, 1)}
+              style={styles.datePicker}
+            />
+          )}
         </View>
 
         {/* Phone */}
@@ -494,5 +517,30 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.medium,
     color: colors.textPrimary,
+  },
+  dateButton: {
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    ...shadows.sm,
+  },
+  dateText: {
+    fontSize: typography.sizes.md,
+    color: colors.textPrimary,
+  },
+  datePlaceholder: {
+    fontSize: typography.sizes.md,
+    color: colors.textLight,
+  },
+  dateClear: {
+    fontSize: typography.sizes.sm,
+    color: colors.primary,
+    fontWeight: typography.weights.medium,
+  },
+  datePicker: {
+    marginTop: spacing.sm,
   },
 });

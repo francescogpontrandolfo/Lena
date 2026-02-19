@@ -1,39 +1,39 @@
-// Lena Design System - Electric Blue & Clean
+// Lena Design System - Elegant Sunset (Golden Hour)
 
 export const colors = {
-  // Backgrounds - Clean white
-  background: '#FFFFFF',   // Pure white
-  card: '#FAFBFC',         // Very subtle off-white for cards
+  // Backgrounds - Soft cream
+  background: '#FEFDFB',   // Almost white with subtle warmth
+  card: '#FFF8F3',         // Barely tinted warm card background
 
-  // Primary palette - Electric blue
-  primary: '#0099FF',      // Bright electric blue
-  primaryLight: '#E8F4FD', // Light blue for backgrounds (readable)
-  primaryDark: '#0077CC',
-  primaryMid: '#33B1FF',   // Medium blue for accents
+  // Primary palette - Golden sunset orange
+  primary: '#D9853B',      // Warm golden orange - elegant sunset
+  primaryLight: '#F5E6D3', // Very soft golden tint
+  primaryDark: '#B8722E',  // Deep sunset gold
+  primaryMid: '#E5A05C',   // Soft golden highlight
 
-  // Secondary palette - Warm coral/pink
-  secondary: '#FF6B9D',    // Vibrant pink
-  secondaryLight: '#FFE0EB',
-  secondaryDark: '#E55585',
+  // Secondary palette - Sunset amber
+  secondary: '#C4956C',    // Dusty amber - sophisticated warmth
+  secondaryLight: '#F0E4D7',
+  secondaryDark: '#A67A52',
 
-  // Accent - Deep indigo/purple
-  accent: '#6366F1',       // Electric indigo
-  accentLight: '#EEF0FF',
-  accentDark: '#4F46E5',
+  // Accent - Dusk lavender
+  accent: '#9B8FAA',       // Muted lavender - elegant twilight
+  accentLight: '#EBE7F0',
+  accentDark: '#7D6F8E',
 
-  // Text - Dark on white background
-  textPrimary: '#1A1A1A',
-  textSecondary: '#6B7280',
-  textLight: '#9CA3AF',
+  // Text - Refined browns
+  textPrimary: '#3A3330',  // Warm charcoal
+  textSecondary: '#8E7F76',
+  textLight: '#C4B8B0',
 
   // Semantic
-  success: '#0099FF',      // Electric blue (consistent)
-  warning: '#F59E0B',      // Amber (readable)
-  error: '#EF4444',        // Clear red
+  success: '#6B9B7C',      // Muted sage green
+  warning: '#D9853B',      // Golden orange (consistent)
+  error: '#C45D5D',        // Muted burgundy red
 
   // UI
-  border: '#E5E7EB',
-  shadow: 'rgba(0, 153, 255, 0.15)',
+  border: '#EFE7DF',
+  shadow: 'rgba(217, 133, 59, 0.12)',
 };
 
 export const spacing = {

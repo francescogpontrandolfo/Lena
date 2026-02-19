@@ -9,7 +9,6 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  Image,
   Animated,
   Keyboard,
 } from 'react-native';
@@ -22,6 +21,7 @@ import { useStore } from '../store/useStore';
 import { Friend, RELATIONSHIP_LABELS } from '../types';
 import { RootStackParamList } from '../navigation';
 import EmptyState from '../components/EmptyState';
+import Avatar from '../components/Avatar';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -55,15 +55,9 @@ function AnimatedSearchRow({ item, onPress }: { item: Friend; onPress: () => voi
         onPressOut={handlePressOut}
         activeOpacity={1}
       >
-        {item.photo ? (
-          <Image source={{ uri: item.photo }} style={styles.friendAvatar} />
-        ) : (
-          <View style={[styles.friendAvatar, styles.friendAvatarPlaceholder]}>
-            <Text style={styles.friendAvatarText}>
-              {item.name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        )}
+        <View style={styles.friendAvatarWrapper}>
+          <Avatar name={item.name} photo={item.photo} size={48} />
+        </View>
         <View style={styles.friendInfo}>
           <Text style={styles.friendName}>{item.name}</Text>
           {item.city && (
@@ -254,21 +248,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     ...shadows.sm,
   },
-  friendAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  friendAvatarWrapper: {
     marginRight: spacing.md,
-  },
-  friendAvatarPlaceholder: {
-    backgroundColor: colors.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  friendAvatarText: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.bold,
-    color: colors.primary,
   },
   friendInfo: {
     flex: 1,
