@@ -80,6 +80,7 @@ export interface Settings {
   birthdayReminderTime: string;   // HH:mm format
   defaultContactFrequency: number; // days
   checkInReminderEnabled: boolean;
+  hasCompletedOnboarding: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -87,6 +88,7 @@ export const DEFAULT_SETTINGS: Settings = {
   birthdayReminderTime: '09:00',
   defaultContactFrequency: 14,
   checkInReminderEnabled: true,
+  hasCompletedOnboarding: false,
 };
 
 // Relationship type display labels

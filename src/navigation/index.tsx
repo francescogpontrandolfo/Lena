@@ -18,6 +18,7 @@ import FriendDetailScreen from '../screens/FriendDetailScreen';
 import AddFriendScreen from '../screens/AddFriendScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ImportContactsScreen from '../screens/ImportContactsScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 
 // Components
 import QuickLogModal from '../components/QuickLogModal';
@@ -25,6 +26,7 @@ import { useStore } from '../store/useStore';
 
 // Types for navigation
 export type RootStackParamList = {
+  Onboarding: undefined;
   MainTabs: undefined;
   FriendDetail: { friendId: string; isBirthday?: boolean };
   AddFriend: { friendId?: string; defaultTier?: string } | undefined;
@@ -158,9 +160,13 @@ function MainTabs() {
 
 // Main navigation
 export default function Navigation() {
+  const { settings } = useStore();
+  const initialRoute = settings.hasCompletedOnboarding ? 'MainTabs' : 'Onboarding';
+
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName={initialRoute}
         screenOptions={{
           headerStyle: {
             backgroundColor: colors.background,
@@ -175,6 +181,11 @@ export default function Navigation() {
           },
         }}
       >
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="MainTabs"
           component={MainTabs}
