@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.lena.app",
+      "bundleIdentifier": "com.francescopontrandolfo.lena",
       "buildNumber": "1",
       "infoPlist": {
         "NSContactsUsageDescription": "Lena uses your contacts to help you stay connected with the friends who matter most.",
@@ -36,6 +36,11 @@
     "plugins": [
       "expo-sqlite",
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6210eb8d-831c-4769-95fa-f7b9ccc266d9"
+      }
+    }
   }
 }

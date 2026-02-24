@@ -36,6 +36,7 @@ export default function OnboardingScreen({ navigation }: Props) {
   const [hasOpenedImport, setHasOpenedImport] = useState(false);
   // Step 2 — top-tier friend
   const [selectedTopFriendId, setSelectedTopFriendId] = useState<string | null>(null);
+  const [friendSearch, setFriendSearch] = useState('');
   const [newFriendName, setNewFriendName] = useState('');
   const [isAddingFriend, setIsAddingFriend] = useState(false);
   // Step 3 — log interaction
@@ -196,12 +197,30 @@ export default function OnboardingScreen({ navigation }: Props) {
         </Text>
 
         {hasFriends ? (
+          <>
+          <View style={styles.searchContainer}>
+            <Feather name="search" size={16} color={colors.textLight} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search friends..."
+              placeholderTextColor={colors.textLight}
+              value={friendSearch}
+              onChangeText={setFriendSearch}
+              autoCorrect={false}
+            />
+            {friendSearch.length > 0 && (
+              <TouchableOpacity onPress={() => setFriendSearch('')} activeOpacity={0.7}>
+                <Feather name="x-circle" size={16} color={colors.textLight} />
+              </TouchableOpacity>
+            )}
+          </View>
           <ScrollView
             style={styles.friendList}
             contentContainerStyle={styles.friendListContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            {friends.map(friend => {
+            {friends.filter(f => f.name.toLowerCase().includes(friendSearch.toLowerCase())).map(friend => {
               const isSelected = friend.id === selectedTopFriendId || friend.tier === 'top';
               return (
                 <TouchableOpacity
@@ -221,6 +240,7 @@ export default function OnboardingScreen({ navigation }: Props) {
               );
             })}
           </ScrollView>
+          </>
         ) : (
           <View style={styles.addFriendForm}>
             <Text style={styles.addFriendLabel}>Add a friend to your Clique</Text>
@@ -336,6 +356,8 @@ export default function OnboardingScreen({ navigation }: Props) {
         visible={showQuickLog}
         onClose={() => setShowQuickLog(false)}
         onSave={handleQuickLogSave}
+        friendId={selectedTopFriendId ?? undefined}
+        friendName={selectedTopFriendId ? friends.find(f => f.id === selectedTopFriendId)?.name : undefined}
       />
     </LinearGradient>
   );
@@ -502,6 +524,28 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.medium,
     color: colors.success,
+  },
+
+  // ── Search bar (step 2) ──────────────────────────────────────────────────
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  searchIcon: {
+    marginRight: spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: typography.sizes.md,
+    color: colors.textPrimary,
+    paddingVertical: 2,
   },
 
   // ── Friends list (step 2) ─────────────────────────────────────────────────
