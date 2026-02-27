@@ -13,6 +13,8 @@ import {
   Modal,
   TouchableWithoutFeedback,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -123,6 +125,10 @@ function TierFriendPickerModal({
       animationType="fade"
       onRequestClose={handleClose}
     >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
       <TouchableWithoutFeedback onPress={handleClose}>
         <View style={pickerStyles.overlay}>
           <TouchableWithoutFeedback>
@@ -196,6 +202,7 @@ function TierFriendPickerModal({
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
