@@ -13,6 +13,8 @@ import {
   Modal,
   TouchableWithoutFeedback,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -29,53 +31,49 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ACTIVE_TIERS: FriendTier[] = ['top', 'close', 'cordialities', 'other'];
 
+type FriendRow = Friend[];
+
 interface TierSection {
   tier: FriendTier;
-  data: Friend[];
+  data: FriendRow[];
 }
 
-const AnimatedFriendRow = React.memo(function AnimatedFriendRow({ friend, onPress }: { friend: Friend; onPress: () => void }) {
+function needsContact(friend: Friend): boolean {
+  if (!friend.lastContactedAt) return false;
+  const daysSince = Math.floor(
+    (Date.now() - new Date(friend.lastContactedAt).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return daysSince >= friend.contactFrequencyDays;
+}
+
+const GridFriendItem = React.memo(function GridFriendItem({
+  friend,
+  onPress,
+}: { friend: Friend; onPress: () => void }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const overdue = needsContact(friend);
 
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.97,
-      tension: 100,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      tension: 100,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
-  };
+  const handlePressIn = () =>
+    Animated.spring(scaleAnim, { toValue: 0.93, tension: 100, friction: 8, useNativeDriver: true }).start();
+  const handlePressOut = () =>
+    Animated.spring(scaleAnim, { toValue: 1, tension: 100, friction: 8, useNativeDriver: true }).start();
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <Animated.View style={[styles.gridCell, { transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity
-        style={styles.friendRow}
+        style={styles.gridCellInner}
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={1}
       >
-        <View style={styles.friendAvatarWrapper}>
-          <Avatar name={friend.name} photo={friend.photo} size={44} />
+        <View style={styles.gridAvatarWrapper}>
+          <Avatar name={friend.name} photo={friend.photo} size={64} />
+          {overdue && <View style={styles.attentionDot} />}
         </View>
-        <View style={styles.friendInfo}>
-          <Text style={styles.friendName}>{friend.name}</Text>
-          {friend.city && (
-            <Text style={styles.friendDetail}>{friend.city}</Text>
-          )}
-        </View>
-        {friend.isStarred && (
-          <Text style={styles.starIcon}>⭐</Text>
-        )}
+        <Text style={styles.gridName} numberOfLines={1}>
+          {friend.name.split(' ')[0]}
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -123,6 +121,10 @@ function TierFriendPickerModal({
       animationType="fade"
       onRequestClose={handleClose}
     >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
       <TouchableWithoutFeedback onPress={handleClose}>
         <View style={pickerStyles.overlay}>
           <TouchableWithoutFeedback>
@@ -196,8 +198,17 @@ function TierFriendPickerModal({
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </Modal>
   );
+}
+
+const GRID_COLUMNS = 3;
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+  return chunks;
 }
 
 export default function FriendsScreen() {
@@ -250,11 +261,11 @@ export default function FriendsScreen() {
     return grouped;
   }, [friends, searchQuery]);
 
-  // Build SectionList sections - collapsed tiers get empty data
+  // Build SectionList sections - collapsed tiers get empty data, friends chunked into grid rows
   const sections: TierSection[] = useMemo(() => {
     return ACTIVE_TIERS.map(tier => ({
       tier,
-      data: collapsedTiers.has(tier) ? [] : friendsByTier[tier],
+      data: collapsedTiers.has(tier) ? [] : chunkArray(friendsByTier[tier], GRID_COLUMNS),
     }));
   }, [friendsByTier, collapsedTiers]);
 
@@ -354,17 +365,26 @@ export default function FriendsScreen() {
     );
   }, [collapsedTiers, friendsByTier, handleAddToTier]);
 
-  const renderItem = useCallback(({ item, index, section }: { item: Friend; index: number; section: TierSection }) => {
+  const renderItem = useCallback(({ item, index, section }: { item: FriendRow; index: number; section: TierSection }) => {
+    const isFirst = index === 0;
     const isLast = index === section.data.length - 1;
     return (
       <View style={[
-        styles.friendRowWrapper,
-        isLast && styles.friendRowWrapperLast,
+        styles.gridRow,
+        isFirst && styles.gridRowFirst,
+        isLast && styles.gridRowLast,
       ]}>
-        <AnimatedFriendRow
-          friend={item}
-          onPress={() => handleFriendPress(item.id)}
-        />
+        {item.map(friend => (
+          <GridFriendItem
+            key={friend.id}
+            friend={friend}
+            onPress={() => handleFriendPress(friend.id)}
+          />
+        ))}
+        {item.length < GRID_COLUMNS &&
+          Array.from({ length: GRID_COLUMNS - item.length }).map((_, i) => (
+            <View key={`empty-${i}`} style={styles.gridCell} />
+          ))}
       </View>
     );
   }, [handleFriendPress]);
@@ -422,7 +442,7 @@ export default function FriendsScreen() {
       {/* Tier Sections */}
       <SectionList
         sections={sections}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.map(f => f.id).join('-')}
         renderItem={renderItem}
         renderSectionHeader={renderSectionHeader as any}
         renderSectionFooter={renderSectionFooter as any}
@@ -591,42 +611,54 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.medium,
     color: colors.primaryDark,
   },
-  friendRowWrapper: {
+  gridRow: {
+    flexDirection: 'row',
     backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
   },
-  friendRowWrapperLast: {
-    borderBottomWidth: 0,
+  gridRowFirst: {
+    borderTopLeftRadius: borderRadius.lg,
+    borderTopRightRadius: borderRadius.lg,
+    overflow: 'hidden',
+  },
+  gridRowLast: {
     borderBottomLeftRadius: borderRadius.lg,
     borderBottomRightRadius: borderRadius.lg,
     overflow: 'hidden',
     marginBottom: spacing.md,
   },
-  friendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: colors.card,
-  },
-  friendAvatarWrapper: {
-    marginRight: spacing.md,
-  },
-  friendInfo: {
+  gridCell: {
     flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
-  friendName: {
-    fontSize: typography.sizes.md,
+  gridCellInner: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  gridAvatarWrapper: {
+    position: 'relative',
+    marginBottom: spacing.xs,
+  },
+  attentionDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.error,
+    borderWidth: 2,
+    borderColor: colors.card,
+  },
+  gridName: {
+    fontSize: typography.sizes.sm,
     fontWeight: typography.weights.medium,
     color: colors.textPrimary,
-  },
-  friendDetail: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  starIcon: {
-    fontSize: 16,
+    textAlign: 'center',
+    width: '100%',
   },
 });
 

@@ -16,14 +16,19 @@ import * as Contacts from 'expo-contacts';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { useStore } from '../store/useStore';
-import { Friend } from '../types';
+import { Friend, ImportedContact } from '../types';
+import { getContactsFromPhone } from '../services/contacts';
 import Avatar from '../components/Avatar';
+
+interface ContactItem extends ImportedContact {
+  existingFriend?: Friend;
+}
 
 export default function ImportContactsScreen() {
   const navigation = useNavigation();
-  const { friends, updateFriend, settings } = useStore();
+  const { friends, addFriend, updateFriend, settings } = useStore();
 
-  const [allFriends, setAllFriends] = useState<Friend[]>([]);
+  const [contactItems, setContactItems] = useState<ContactItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -32,14 +37,13 @@ export default function ImportContactsScreen() {
   const [permissionDenied, setPermissionDenied] = useState(false);
 
   useEffect(() => {
-    loadFriends();
+    loadContacts();
   }, []);
 
-  const loadFriends = async () => {
+  const loadContacts = async () => {
     setIsLoading(true);
     setPermissionDenied(false);
 
-    // Check current permission status
     const { status: currentStatus } = await Contacts.getPermissionsAsync();
 
     if (currentStatus === 'granted') {
@@ -60,34 +64,47 @@ export default function ImportContactsScreen() {
       setHasPermission(true);
     }
 
-    // Get all friends from contacts
-    const contactFriends = friends.filter(f => f.contactId);
-    setAllFriends(contactFriends);
+    // Load directly from device contacts (not from already-synced store data)
+    const deviceContacts = await getContactsFromPhone();
 
-    // Pre-select friends in active tiers (not 'other')
-    const activeIds = contactFriends
-      .filter(f => f.tier !== 'other')
-      .map(f => f.id);
-    setSelectedIds(new Set(activeIds));
+    // Build map of existing friends by contactId
+    const friendsByContactId = new Map<string, Friend>();
+    friends.forEach(f => {
+      if (f.contactId) friendsByContactId.set(f.contactId, f);
+    });
+
+    // Build display items from device contacts
+    const items: ContactItem[] = deviceContacts.map(contact => ({
+      ...contact,
+      existingFriend: friendsByContactId.get(contact.id),
+    }));
+
+    setContactItems(items);
+
+    // Pre-select contacts already in active tiers
+    const activeContactIds = items
+      .filter(item => item.existingFriend && item.existingFriend.tier !== 'other')
+      .map(item => item.id);
+    setSelectedIds(new Set(activeContactIds));
 
     setIsLoading(false);
   };
 
-  const toggleSelection = (id: string) => {
+  const toggleSelection = (contactId: string) => {
     const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
+    if (newSelected.has(contactId)) {
+      newSelected.delete(contactId);
     } else {
-      newSelected.add(id);
+      newSelected.add(contactId);
     }
     setSelectedIds(newSelected);
   };
 
   const selectAll = () => {
-    if (selectedIds.size === filteredFriends.length) {
+    if (selectedIds.size === filteredItems.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredFriends.map(f => f.id)));
+      setSelectedIds(new Set(filteredItems.map(item => item.id)));
     }
   };
 
@@ -95,22 +112,32 @@ export default function ImportContactsScreen() {
     setIsSaving(true);
 
     try {
-      // Update all friends based on selection
-      for (const friend of allFriends) {
-        const isSelected = selectedIds.has(friend.id);
-        const isInActiveTier = friend.tier !== 'other';
+      for (const item of contactItems) {
+        const isSelected = selectedIds.has(item.id);
 
-        // If selection changed, update the friend's tier
-        if (isSelected && !isInActiveTier) {
-          // Move to 'close' tier and set default contact frequency
-          await updateFriend(friend.id, {
+        if (item.existingFriend) {
+          const isInActiveTier = item.existingFriend.tier !== 'other';
+          if (isSelected && !isInActiveTier) {
+            await updateFriend(item.existingFriend.id, {
+              tier: 'close',
+              contactFrequencyDays: settings.defaultContactFrequency,
+            });
+          } else if (!isSelected && isInActiveTier) {
+            await updateFriend(item.existingFriend.id, { tier: 'other' });
+          }
+        } else if (isSelected) {
+          // New contact — import as friend in 'close' tier
+          await addFriend({
+            id: 'new',
+            name: item.name,
+            photo: item.photo,
+            birthday: item.birthday,
+            phone: item.phone,
+            relationshipType: 'friend',
             tier: 'close',
+            isStarred: false,
             contactFrequencyDays: settings.defaultContactFrequency,
-          });
-        } else if (!isSelected && isInActiveTier) {
-          // Move back to 'other' tier (no active tracking)
-          await updateFriend(friend.id, {
-            tier: 'other',
+            contactId: item.id,
           });
         }
       }
@@ -127,11 +154,11 @@ export default function ImportContactsScreen() {
     }
   };
 
-  const filteredFriends = allFriends.filter(friend =>
-    friend.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems = contactItems.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderFriend = ({ item }: { item: Friend }) => {
+  const renderContact = ({ item }: { item: ContactItem }) => {
     const isSelected = selectedIds.has(item.id);
 
     return (
@@ -192,7 +219,7 @@ export default function ImportContactsScreen() {
             <Text style={styles.retryButtonText}>Open Settings</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.retryButton} onPress={loadFriends}>
+          <TouchableOpacity style={styles.retryButton} onPress={loadContacts}>
             <Text style={styles.retryButtonText}>Grant Permission</Text>
           </TouchableOpacity>
         )}
@@ -200,15 +227,15 @@ export default function ImportContactsScreen() {
     );
   }
 
-  if (allFriends.length === 0) {
+  if (contactItems.length === 0) {
     return (
       <View style={styles.centered}>
         <View style={styles.emptyIconContainer}>
           <Text style={styles.emptyIconText}>📱</Text>
         </View>
-        <Text style={styles.emptyTitle}>No contacts yet</Text>
+        <Text style={styles.emptyTitle}>No contacts found</Text>
         <Text style={styles.emptyText}>
-          Your contacts will automatically sync when you add them to your phone.
+          Add contacts to your phone's Contacts app and they'll appear here.
         </Text>
         <TouchableOpacity
           style={styles.retryButton}
@@ -243,7 +270,7 @@ export default function ImportContactsScreen() {
       {/* Select all */}
       <TouchableOpacity style={styles.selectAllRow} onPress={selectAll}>
         <Text style={styles.selectAllText}>
-          {selectedIds.size === filteredFriends.length
+          {selectedIds.size === filteredItems.length
             ? 'Deselect All'
             : 'Select All'}
         </Text>
@@ -252,10 +279,10 @@ export default function ImportContactsScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* Friends list */}
+      {/* Contacts list */}
       <FlatList
-        data={filteredFriends}
-        renderItem={renderFriend}
+        data={filteredItems}
+        renderItem={renderContact}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
