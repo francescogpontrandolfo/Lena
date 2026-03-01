@@ -40,23 +40,14 @@ export async function scheduleBirthdayNotification(
   if (!hasPermission) return null;
 
   const [hours, minutes] = reminderTime.split(':').map(Number);
-  const birthday = new Date(friend.birthday);
-  const now = new Date();
 
-  // Set birthday for this year
-  let scheduledDate = new Date(
-    now.getFullYear(),
-    birthday.getMonth(),
-    birthday.getDate(),
-    hours,
-    minutes
-  );
+  // Parse birthday as local date components to avoid UTC midnight timezone offset issues
+  const [, monthStr, dayStr] = friend.birthday.split('-');
+  const birthdayMonth = parseInt(monthStr); // 1-indexed (required by CALENDAR trigger)
+  const birthdayDay = parseInt(dayStr);
 
-  // If birthday already passed this year, schedule for next year
-  if (scheduledDate <= now) {
-    scheduledDate.setFullYear(now.getFullYear() + 1);
-  }
-
+  // Use a repeating CALENDAR trigger so the notification fires every year automatically.
+  // This avoids the one-time DATE trigger that would need manual rescheduling each year.
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
       title: `${friend.name}'s Birthday!`,
@@ -64,8 +55,12 @@ export async function scheduleBirthdayNotification(
       data: { friendId: friend.id, type: 'birthday' },
     },
     trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: scheduledDate,
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      repeats: true,
+      month: birthdayMonth,
+      day: birthdayDay,
+      hour: hours,
+      minute: minutes,
     },
   });
 
