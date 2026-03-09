@@ -237,7 +237,8 @@ export const useStore = create<LenaStore>((set, get) => ({
     friends.forEach(friend => {
       // Check for birthdays
       if (friend.birthday) {
-        const birthday = new Date(friend.birthday);
+        const [bYear, bMonth, bDay] = friend.birthday.split('-').map(Number);
+        const birthday = new Date(bYear, bMonth - 1, bDay);
         const thisYearBirthday = new Date(
           today.getFullYear(),
           birthday.getMonth(),

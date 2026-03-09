@@ -356,7 +356,8 @@ export async function getFriendsWithUpcomingBirthdays(days: number = 7): Promise
   return friends.filter(friend => {
     if (!friend.birthday) return false;
 
-    const birthday = new Date(friend.birthday);
+    const [bYear, bMonth, bDay] = friend.birthday.split('-').map(Number);
+    const birthday = new Date(bYear, bMonth - 1, bDay);
     const thisYearBirthday = new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate());
 
     // If birthday already passed this year, check next year
@@ -367,8 +368,10 @@ export async function getFriendsWithUpcomingBirthdays(days: number = 7): Promise
     const daysUntil = Math.floor((thisYearBirthday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return daysUntil >= 0 && daysUntil <= days;
   }).sort((a, b) => {
-    const aDate = new Date(a.birthday!);
-    const bDate = new Date(b.birthday!);
+    const [aYear, aMonth, aDay] = a.birthday!.split('-').map(Number);
+    const aDate = new Date(aYear, aMonth - 1, aDay);
+    const [bYearS, bMonthS, bDayS] = b.birthday!.split('-').map(Number);
+    const bDate = new Date(bYearS, bMonthS - 1, bDayS);
     return aDate.getMonth() - bDate.getMonth() || aDate.getDate() - bDate.getDate();
   });
 }
