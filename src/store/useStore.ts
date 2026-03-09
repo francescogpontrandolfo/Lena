@@ -237,12 +237,12 @@ export const useStore = create<LenaStore>((set, get) => ({
     friends.forEach(friend => {
       // Check for birthdays
       if (friend.birthday) {
-        const [bYear, bMonth, bDay] = friend.birthday.split('-').map(Number);
-        const birthday = new Date(bYear, bMonth - 1, bDay);
+        // Parse birthday as local date components to avoid UTC midnight timezone offset issues
+        const [, bMonthStr, bDayStr] = friend.birthday.split('-');
         const thisYearBirthday = new Date(
           today.getFullYear(),
-          birthday.getMonth(),
-          birthday.getDate()
+          parseInt(bMonthStr) - 1, // 0-indexed month
+          parseInt(bDayStr)
         );
 
         // If birthday passed, check next year
