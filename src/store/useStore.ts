@@ -233,6 +233,7 @@ export const useStore = create<LenaStore>((set, get) => ({
     const { friends, settings } = get();
     const items: TimelineItem[] = [];
     const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
     friends.forEach(friend => {
       // Check for birthdays
@@ -250,7 +251,7 @@ export const useStore = create<LenaStore>((set, get) => ({
           thisYearBirthday.setFullYear(today.getFullYear() + 1);
         }
 
-        const daysUntil = differenceInDays(thisYearBirthday, today);
+        const daysUntil = differenceInDays(thisYearBirthday, todayStart);
 
         if (daysUntil === 0) {
           // Birthday today!
