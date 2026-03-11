@@ -68,7 +68,7 @@ const GridFriendItem = React.memo(function GridFriendItem({
         activeOpacity={1}
       >
         <View style={styles.gridAvatarWrapper}>
-          <Avatar name={friend.name} photo={friend.photo} size={64} />
+          <Avatar name={friend.name} photo={friend.photo} size={48} />
           {overdue && <View style={styles.attentionDot} />}
         </View>
         <Text style={styles.gridName} numberOfLines={1}>
@@ -674,7 +674,7 @@ const pickerStyles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: borderRadius.xl,
     width: '100%',
-    maxHeight: '75%',
+    height: '70%',
     ...shadows.lg,
     overflow: 'hidden',
   },

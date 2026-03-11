@@ -88,7 +88,7 @@ export default function TimelineCard({ item, onPress, index = 0 }: TimelineCardP
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
           {item.subtitle ? (
             <Text style={styles.subtitle}>{item.subtitle}</Text>
           ) : null}
