@@ -27,6 +27,8 @@ import {
   FriendTier,
   TIER_LABELS,
   TIER_COLORS,
+  TIER_ORDER,
+  FREQUENCY_OPTIONS,
 } from '../types';
 import { RootStackParamList } from '../navigation';
 import { generateId } from '../services/database';
@@ -42,15 +44,7 @@ const RELATIONSHIP_OPTIONS: RelationshipType[] = [
   'acquaintance',
 ];
 
-const FREQUENCY_OPTIONS = [
-  { value: 7, label: 'Weekly' },
-  { value: 14, label: 'Every 2 weeks' },
-  { value: 30, label: 'Monthly' },
-  { value: 60, label: 'Every 2 months' },
-  { value: 90, label: 'Quarterly' },
-];
-
-const TIER_OPTIONS: FriendTier[] = ['top', 'close', 'cordialities', 'other'];
+// FREQUENCY_OPTIONS and TIER_ORDER imported from types
 
 export default function AddFriendScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -229,7 +223,7 @@ export default function AddFriendScreen() {
         <View style={styles.field}>
           <Text style={styles.label}>Priority Tier</Text>
           <View style={styles.optionGroup}>
-            {TIER_OPTIONS.map((t) => (
+            {TIER_ORDER.map((t) => (
               <TouchableOpacity
                 key={t}
                 style={[

@@ -13,21 +13,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 import { useStore } from '../store/useStore';
-import * as Notifications from 'expo-notifications';
+import { FriendTier, TIER_LABELS, TIER_ORDER, FREQUENCY_OPTIONS } from '../types';
 import {
   requestNotificationPermission,
-  hasNotificationPermission,
 } from '../services/notifications';
 
-const FREQUENCY_OPTIONS = [
-  { value: 7, label: '1 week' },
-  { value: 14, label: '2 weeks' },
-  { value: 21, label: '3 weeks' },
-  { value: 30, label: '1 month' },
+const REMINDER_TIME_OPTIONS = [
+  { value: '08:00', label: '8 AM' },
+  { value: '09:00', label: '9 AM' },
+  { value: '10:00', label: '10 AM' },
+  { value: '12:00', label: '12 PM' },
+  { value: '14:00', label: '2 PM' },
+  { value: '18:00', label: '6 PM' },
 ];
 
 export default function SettingsScreen() {
-  const { settings, updateSettings, resetAllLastContacted } = useStore();
+  const { settings, updateSettings } = useStore();
   const [isCheckingPermission, setIsCheckingPermission] = useState(false);
 
   const handleNotificationToggle = async (value: boolean) => {
@@ -53,33 +54,15 @@ export default function SettingsScreen() {
     await updateSettings({ checkInReminderEnabled: value });
   };
 
-  const handleFrequencyChange = async (value: number) => {
-    await updateSettings({ defaultContactFrequency: value });
+  const handleTierFrequencyChange = async (tier: FriendTier, value: number) => {
+    const current = useStore.getState().settings.tierFrequencies;
+    await updateSettings({
+      tierFrequencies: { ...current, [tier]: value },
+    });
   };
 
-  const handleTestNotification = async () => {
-    const granted = await requestNotificationPermission();
-    if (!granted) {
-      Alert.alert(
-        'Permission Required',
-        'Please enable notifications to test this feature.'
-      );
-      return;
-    }
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Hey! It's Lena",
-        body: "This is a test notification. Notifications are working!",
-        data: { type: 'test' },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: 5,
-      },
-    });
-
-    Alert.alert('Notification Scheduled', 'You will receive a test notification in 5 seconds!');
+  const handleReminderTimeChange = async (value: string) => {
+    await updateSettings({ dailyReminderTime: value });
   };
 
   return (
@@ -125,35 +108,26 @@ export default function SettingsScreen() {
             />
           </View>
 
-          <TouchableOpacity style={styles.testButton} onPress={handleTestNotification}>
-            <Text style={styles.testButtonText}>Test Notification</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Defaults section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Defaults</Text>
-
           <View style={styles.settingBlock}>
-            <Text style={styles.settingLabel}>Default Contact Frequency</Text>
+            <Text style={styles.settingLabel}>Daily Reminder Time</Text>
             <Text style={styles.settingDescription}>
-              How often to remind you for new friends
+              When to send check-in reminders each day
             </Text>
             <View style={styles.frequencyOptions}>
-              {FREQUENCY_OPTIONS.map((option) => (
+              {REMINDER_TIME_OPTIONS.map((option) => (
                 <TouchableOpacity
                   key={option.value}
                   style={[
                     styles.frequencyButton,
-                    settings.defaultContactFrequency === option.value &&
+                    settings.dailyReminderTime === option.value &&
                       styles.frequencyButtonSelected,
                   ]}
-                  onPress={() => handleFrequencyChange(option.value)}
+                  onPress={() => handleReminderTimeChange(option.value)}
                 >
                   <Text
                     style={[
                       styles.frequencyText,
-                      settings.defaultContactFrequency === option.value &&
+                      settings.dailyReminderTime === option.value &&
                         styles.frequencyTextSelected,
                     ]}
                   >
@@ -165,30 +139,38 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Demo section */}
+        {/* Contact frequency per tier */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Demo</Text>
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={() => {
-              Alert.alert(
-                'Reset Timeline',
-                'This will make all swiped cards reappear on the Home timeline.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Reset',
-                    onPress: async () => {
-                      await resetAllLastContacted();
-                      Alert.alert('Done', 'All timeline cards have been restored.');
-                    },
-                  },
-                ]
-              );
-            }}
-          >
-            <Text style={styles.testButtonText}>Reset Timeline Cards</Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Contact Frequency</Text>
+
+          {TIER_ORDER.map((tier) => (
+            <View key={tier} style={styles.settingBlock}>
+              <Text style={styles.settingLabel}>{TIER_LABELS[tier]}</Text>
+              <View style={styles.frequencyOptions}>
+                {FREQUENCY_OPTIONS.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.frequencyButton,
+                      settings.tierFrequencies[tier] === option.value &&
+                        styles.frequencyButtonSelected,
+                    ]}
+                    onPress={() => handleTierFrequencyChange(tier, option.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.frequencyText,
+                        settings.tierFrequencies[tier] === option.value &&
+                          styles.frequencyTextSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ))}
         </View>
 
         {/* About section */}
@@ -207,7 +189,7 @@ export default function SettingsScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Made with 💙 for better friendships</Text>
+          <Text style={styles.footerText}>Made with love for better friendships</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -273,6 +255,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     padding: spacing.md,
     borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
     ...shadows.sm,
   },
   frequencyOptions: {
@@ -332,17 +315,5 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: typography.sizes.sm,
     color: colors.textLight,
-  },
-  testButton: {
-    backgroundColor: colors.primaryLight,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    marginTop: spacing.sm,
-  },
-  testButtonText: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.medium,
-    color: colors.primaryDark,
   },
 });

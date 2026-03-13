@@ -120,7 +120,7 @@ export default function ImportContactsScreen() {
           if (isSelected && !isInActiveTier) {
             await updateFriend(item.existingFriend.id, {
               tier: 'close',
-              contactFrequencyDays: settings.defaultContactFrequency,
+              contactFrequencyDays: settings.tierFrequencies['close'],
             });
           } else if (!isSelected && isInActiveTier) {
             await updateFriend(item.existingFriend.id, { tier: 'other' });
@@ -136,7 +136,7 @@ export default function ImportContactsScreen() {
             relationshipType: 'friend',
             tier: 'close',
             isStarred: false,
-            contactFrequencyDays: settings.defaultContactFrequency,
+            contactFrequencyDays: settings.tierFrequencies['close'],
             contactId: item.id,
           });
         }

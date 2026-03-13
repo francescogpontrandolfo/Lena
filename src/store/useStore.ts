@@ -73,7 +73,7 @@ export const useStore = create<LenaStore>((set, get) => ({
 
           if (hasPermission) {
             const currentFriends = get().friends;
-            const { imported, updated } = await syncAllContacts(currentFriends, get().settings.defaultContactFrequency);
+            const { imported, updated } = await syncAllContacts(currentFriends, get().settings.tierFrequencies['other']);
 
             if (imported > 0 || updated > 0) {
               console.log(`Synced contacts: ${imported} imported, ${updated} updated`);

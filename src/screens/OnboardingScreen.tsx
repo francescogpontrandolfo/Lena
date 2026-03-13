@@ -79,7 +79,7 @@ export default function OnboardingScreen({ navigation }: Props) {
         tier: 'top',
         relationshipType: 'close_friend',
         isStarred: false,
-        contactFrequencyDays: settings.defaultContactFrequency,
+        contactFrequencyDays: settings.tierFrequencies['top'],
       });
       setSelectedTopFriendId(created.id);
       setNewFriendName('');
