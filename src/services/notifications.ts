@@ -70,14 +70,16 @@ export async function scheduleBirthdayNotification(
 // Schedule a check-in reminder
 export async function scheduleCheckInReminder(
   friend: Friend,
-  daysFromNow: number = 1
+  daysFromNow: number = 1,
+  reminderTime: string = '10:00'
 ): Promise<string | null> {
   const hasPermission = await hasNotificationPermission();
   if (!hasPermission) return null;
 
+  const [hours, minutes] = reminderTime.split(':').map(Number);
   const scheduledDate = new Date();
   scheduledDate.setDate(scheduledDate.getDate() + daysFromNow);
-  scheduledDate.setHours(10, 0, 0, 0); // 10 AM
+  scheduledDate.setHours(hours, minutes, 0, 0);
 
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {

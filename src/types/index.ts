@@ -78,7 +78,8 @@ export interface ImportedContact {
 export interface Settings {
   notificationsEnabled: boolean;
   birthdayReminderTime: string;   // HH:mm format
-  defaultContactFrequency: number; // days
+  dailyReminderTime: string;      // HH:mm format for check-in reminders
+  tierFrequencies: Record<FriendTier, number>; // days per tier
   checkInReminderEnabled: boolean;
   hasCompletedOnboarding: boolean;
 }
@@ -86,7 +87,8 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   notificationsEnabled: true,
   birthdayReminderTime: '09:00',
-  defaultContactFrequency: 14,
+  dailyReminderTime: '10:00',
+  tierFrequencies: { top: 14, close: 14, cordialities: 14, other: 14 },
   checkInReminderEnabled: true,
   hasCompletedOnboarding: false,
 };
@@ -125,10 +127,14 @@ export const TIER_COLORS: Record<FriendTier, string> = {
   other: '#8E7F76',         // warm brown - other contacts
 };
 
+// Canonical tier order
+export const TIER_ORDER: FriendTier[] = ['top', 'close', 'cordialities', 'other'];
+
 // Contact frequency options
 export const FREQUENCY_OPTIONS = [
   { value: 7, label: '1 week' },
   { value: 14, label: '2 weeks' },
   { value: 30, label: '1 month' },
+  { value: 60, label: '2 months' },
   { value: 90, label: '3 months' },
 ];
