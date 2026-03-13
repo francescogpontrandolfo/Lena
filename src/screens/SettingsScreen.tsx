@@ -143,7 +143,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact Frequency</Text>
 
-          {TIER_ORDER.map((tier) => (
+          {TIER_ORDER.filter((tier) => tier !== 'other').map((tier) => (
             <View key={tier} style={styles.settingBlock}>
               <Text style={styles.settingLabel}>{TIER_LABELS[tier]}</Text>
               <View style={styles.frequencyOptions}>
