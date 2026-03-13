@@ -19,6 +19,7 @@
       "infoPlist": {
         "NSContactsUsageDescription": "Lena uses your contacts to help you stay connected with the friends who matter most.",
         "NSPhotoLibraryUsageDescription": "Lena needs access to your photos to set profile pictures for your friends.",
+        "NSUserNotificationsUsageDescription": "Lena sends birthday and check-in reminders to help you stay in touch with friends.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
